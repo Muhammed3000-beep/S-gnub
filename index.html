@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Gündem & Sohbet</title>
+    <title>Gündem & Canlı Sohbet</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         ::-webkit-scrollbar { width: 6px; }
@@ -22,7 +22,7 @@
     <div class="max-w-md mx-auto min-h-screen flex flex-col bg-slate-900/40 backdrop-blur-xl shadow-2xl relative pb-16 border-x border-slate-800/60">
         
         <header class="p-4 border-b border-slate-800/80 flex justify-between items-center bg-slate-950/80 sticky top-0 z-20 backdrop-blur-md">
-            <h1 id="page-title" class="text-xl font-black bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent tracking-wide">✨ Gündem</h1>
+            <h1 id="page-title" class="text-xl font-black bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent tracking-wide">✨ Sosyal Akış</h1>
             <div id="user-area"></div>
         </header>
 
@@ -32,8 +32,8 @@
                 <div class="text-8xl relative filter drop-shadow-[0_0_15px_rgba(139,92,246,0.5)]">🌌</div>
             </div>
             <div class="space-y-3 text-center">
-                <h2 class="text-3xl font-black tracking-tight bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">Siber Evrene Hoş Geldin</h2>
-                <p class="text-slate-400 text-sm px-6 leading-relaxed">Gündemi neon ışıklar altında yakala, toplulukla anlık konuş ve yapay zekayla sohbet et.</p>
+                <h2 class="text-3xl font-black tracking-tight bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">Şirket İçi Sosyal Ağ</h2>
+                <p class="text-slate-400 text-sm px-6 leading-relaxed">Fikirlerini özgürce paylaş, ekibinle canlı ve güvenli şekilde hemen yazışmaya başla.</p>
             </div>
             <button id="btn-login" class="w-full max-w-xs py-4 px-6 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-600 text-white rounded-2xl font-bold hover:opacity-90 transition-all transform hover:scale-[1.03] active:scale-[0.97] shadow-lg shadow-violet-500/30 flex items-center justify-center space-x-2">
                 <span>Google ile Giriş Yap</span>
@@ -44,13 +44,13 @@
             
             <section id="tab-gundem" class="space-y-6">
                 <div class="bg-white/5 p-4 rounded-3xl border border-slate-800/80 neon-glow">
-                    <textarea id="input-gundem" placeholder="Gündeme dair ne paylaşmak istersin?" class="w-full bg-transparent border-none focus:outline-none resize-none text-slate-100 text-sm placeholder-slate-500 font-medium" rows="2"></textarea>
+                    <textarea id="input-gundem" placeholder="Bugün ekiple ne paylaşmak istersin? Fikirlerini yaz..." class="w-full bg-transparent border-none focus:outline-none resize-none text-slate-100 text-sm placeholder-slate-500 font-medium" rows="3"></textarea>
                     <div class="flex justify-end mt-2">
                         <button id="btn-paylas" class="px-6 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-2xl text-xs font-bold hover:opacity-90 transition shadow-md shadow-violet-500/20">Paylaş</button>
                     </div>
                 </div>
                 <div class="space-y-4">
-                    <h3 class="font-extrabold text-xs uppercase tracking-wider text-slate-500">Canlı Akış</h3>
+                    <h3 class="font-extrabold text-xs uppercase tracking-wider text-slate-500">Şirket Akışı</h3>
                     <div id="gundem-listesi" class="space-y-3"></div>
                 </div>
             </section>
@@ -58,24 +58,9 @@
             <section id="tab-chat" class="hidden flex flex-col h-[70vh]">
                 <div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 pr-1 mb-4 flex flex-col"></div>
                 <div class="flex items-center space-x-2 bg-white/5 p-2 rounded-2xl border border-slate-800/80 backdrop-blur-md">
-                    <input type="text" id="input-chat" placeholder="Bir mesaj yaz..." class="flex-1 bg-transparent border-none focus:outline-none px-4 text-sm text-slate-100 placeholder-slate-500" />
+                    <input type="text" id="input-chat" placeholder="Ekibe bir mesaj gönder..." class="flex-1 bg-transparent border-none focus:outline-none px-4 text-sm text-slate-100 placeholder-slate-500" />
                     <button id="btn-send-chat" class="p-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl hover:opacity-90 transition shadow-md">
                         <svg class="w-4 h-4 transform rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                    </button>
-                </div>
-            </section>
-
-            <section id="tab-unluler" class="hidden flex flex-col h-[70vh]">
-                <div class="flex space-x-2 overflow-x-auto pb-3 mb-3 border-b border-slate-800/60">
-                    <button class="celebrity-btn px-5 py-2 rounded-2xl text-xs font-bold transition-all duration-300" data-cel="elon" id="btn-celeb-elon">Elon Musk</button>
-                    <button class="celebrity-btn px-5 py-2 rounded-2xl text-xs font-bold transition-all duration-300" data-cel="einstein" id="btn-celeb-einstein">Einstein</button>
-                    <button class="celebrity-btn px-5 py-2 rounded-2xl text-xs font-bold transition-all duration-300" data-cel="shakespeare" id="btn-celeb-shakespeare">Shakespeare</button>
-                </div>
-                <div id="ai-messages" class="flex-1 overflow-y-auto space-y-3 pr-1 mb-4 flex flex-col"></div>
-                <div class="flex items-center space-x-2 bg-white/5 p-2 rounded-2xl border border-slate-800/80 backdrop-blur-md">
-                    <input type="text" id="input-ai" placeholder="Ünlüye sorunu sor..." class="flex-1 bg-transparent border-none focus:outline-none px-4 text-sm text-slate-100 placeholder-slate-500" />
-                    <button id="btn-send-ai" class="p-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl hover:opacity-90 transition shadow-md">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     </button>
                 </div>
             </section>
@@ -85,15 +70,11 @@
         <nav id="bottom-nav" class="hidden fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-950/90 border-t border-slate-900/80 flex justify-around items-center h-16 z-20 backdrop-blur-md">
             <button class="nav-item flex flex-col items-center space-y-1 text-violet-400 w-full py-2 transition" data-tab="gundem">
                 <span class="text-xl filter drop-shadow-[0_0_8px_rgba(139,92,246,0.4)]">✨</span>
-                <span class="text-[10px] font-bold">Gündem</span>
+                <span class="text-[10px] font-bold">Sosyal Akış</span>
             </button>
             <button class="nav-item flex flex-col items-center space-y-1 text-slate-500 hover:text-violet-400 w-full py-2 transition" data-tab="chat">
                 <span class="text-xl">💬</span>
-                <span class="text-[10px] font-bold">Sohbet</span>
-            </button>
-            <button class="nav-item flex flex-col items-center space-y-1 text-slate-500 hover:text-violet-400 w-full py-2 transition" data-tab="unluler">
-                <span class="text-xl">🎭</span>
-                <span class="text-[10px] font-bold">Ünlüler</span>
+                <span class="text-[10px] font-bold">Canlı Sohbet</span>
             </button>
         </nav>
 
@@ -125,24 +106,14 @@
         const userArea = document.getElementById("user-area");
         const appScreen = document.getElementById("app-screen");
         const bottomNav = document.getElementById("bottom-nav");
+        const btnSendChat = document.getElementById("btn-send-chat");
+        const inputChat = document.getElementById("input-chat");
+        const chatMessages = document.getElementById("chat-messages");
 
-        // Güvenli metin temizleme fonksiyonu (XSS Koruması)
-        function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, 
-                tag => ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    "'": '&#39;',
-                    '"': '&quot;'
-                }[tag] || tag)
-            );
-        }
-
+        // Sekme Değiştirme Sistemi
         const tabs = {
-            gundem: { el: document.getElementById("tab-gundem"), title: "✨ Gündem" },
-            chat: { el: document.getElementById("tab-chat"), title: "💬 Ortak Sohbet" },
-            unluler: { el: document.getElementById("tab-unluler"), title: "🎭 Ünlüler AI" }
+            gundem: { el: document.getElementById("tab-gundem"), title: "✨ Sosyal Akış" },
+            chat: { el: document.getElementById("tab-chat"), title: "💬 Canlı Sohbet" }
         };
 
         document.querySelectorAll(".nav-item").forEach(button => {
@@ -156,8 +127,9 @@
                         tabs[key].el.classList.remove("hidden");
                         document.getElementById("page-title").textContent = tabs[key].title;
                         if(key === 'chat') {
-                            const chatMessages = document.getElementById("chat-messages");
-                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                            setTimeout(() => {
+                                chatMessages.scrollTop = chatMessages.scrollHeight;
+                            }, 50);
                         }
                     } else {
                         tabs[key].el.classList.add("hidden");
@@ -166,6 +138,7 @@
             });
         });
 
+        // KULLANICI GİRİŞ DURUMU
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 document.getElementById("login-screen").classList.add("hidden");
@@ -199,7 +172,6 @@
                 
                 gundemiDinle();
                 chatDinle();
-                selectCelebrity("elon");
             } else {
                 document.getElementById("login-screen").classList.remove("hidden");
                 appScreen.classList.add("hidden");
@@ -212,17 +184,22 @@
             signInWithPopup(auth, provider).catch(err => console.error(err));
         });
 
+        // 1. GENİŞLETİLMİŞ SOSYAL AKIŞ (GÜNDEM) SİSTEMİ
         btnPaylas.addEventListener("click", async () => {
             const text = inputGundem.value.trim();
             if(!text) return;
-            await addDoc(collection(db, "gundem"), {
-                uid: auth.currentUser.uid,
-                userName: auth.currentUser.displayName,
-                userPhoto: auth.currentUser.photoURL,
-                content: text,
-                createdAt: serverTimestamp()
-            });
-            inputGundem.value = "";
+            try {
+                await addDoc(collection(db, "gundem"), {
+                    uid: auth.currentUser.uid,
+                    userName: auth.currentUser.displayName,
+                    userPhoto: auth.currentUser.photoURL,
+                    content: text,
+                    createdAt: serverTimestamp()
+                });
+                inputGundem.value = "";
+            } catch (error) {
+                console.error("Akış paylaşım hatası: ", error);
+            }
         });
 
         function gundemiDinle() {
@@ -235,17 +212,19 @@
                     el.className = "p-4 bg-white/5 backdrop-blur-md rounded-2xl border border-slate-800/80 flex space-x-3 shadow-sm hover:border-slate-700/80 transition duration-300";
                     
                     const img = document.createElement("img");
-                    img.src = post.userPhoto;
+                    img.src = post.userPhoto || 'https://via.placeholder.com/40';
                     img.className = "w-9 h-9 rounded-full border border-slate-700 shadow-sm";
                     
                     const textDiv = document.createElement("div");
+                    textDiv.className = "flex-1";
+                    
                     const nameH4 = document.createElement("h4");
                     nameH4.className = "font-extrabold text-xs text-slate-200";
                     nameH4.textContent = post.userName;
                     
                     const contentP = document.createElement("p");
-                    contentP.className = "text-slate-300 text-sm mt-1 leading-relaxed font-medium";
-                    contentP.textContent = post.content; // textContent XSS'i önler
+                    contentP.className = "text-slate-300 text-sm mt-1 leading-relaxed font-medium break-all";
+                    contentP.textContent = post.content;
                     
                     textDiv.appendChild(nameH4);
                     textDiv.appendChild(contentP);
@@ -256,34 +235,45 @@
             });
         }
 
-        const btnSendChat = document.getElementById("btn-send-chat");
-        const inputChat = document.getElementById("input-chat");
-        const chatMessages = document.getElementById("chat-messages");
-
-        btnSendChat.addEventListener("click", async () => {
+        // 2. HATALARI SIFIRLANMIŞ CANLI SOHBET SİSTEMİ
+        async function sendMessage() {
             const text = inputChat.value.trim();
-            if(!text) return;
-            await addDoc(collection(db, "chats"), {
-                uid: auth.currentUser.uid,
-                userName: auth.currentUser.displayName,
-                userPhoto: auth.currentUser.photoURL,
-                message: text,
-                createdAt: serverTimestamp()
-            });
-            inputChat.value = "";
-        });
+            if (!text || !auth.currentUser) return;
+            
+            try {
+                await addDoc(collection(db, "chats"), {
+                    uid: auth.currentUser.uid,
+                    userName: auth.currentUser.displayName,
+                    userPhoto: auth.currentUser.photoURL,
+                    message: text,
+                    createdAt: serverTimestamp()
+                });
+                inputChat.value = "";
+            } catch (error) {
+                console.error("Mesaj gönderilemedi: ", error);
+            }
+        }
 
-        inputChat.addEventListener("keypress", (e) => {
-            if(e.key === "Enter") btnSendChat.click();
-        });
+        // Tıklama ve Enter dinleyicileri (Buton hatasını gideren kısım)
+        btnSendChat.onclick = (e) => {
+            e.preventDefault();
+            sendMessage();
+        };
+
+        inputChat.onkeydown = (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                sendMessage();
+            }
+        };
 
         function chatDinle() {
-            const q = query(collection(db, "chats"), orderBy("createdAt", "asc"), limit(60));
+            const q = query(collection(db, "chats"), orderBy("createdAt", "asc"), limit(80));
             onSnapshot(q, (snapshot) => {
                 chatMessages.innerHTML = "";
                 snapshot.forEach(doc => {
                     const msg = doc.data();
-                    const isMe = msg.uid === auth.currentUser.uid;
+                    const isMe = msg.uid === auth.currentUser?.uid;
                     
                     const wrapper = document.createElement("div");
                     wrapper.className = `flex ${isMe ? 'justify-end' : 'justify-start'} w-full`;
@@ -303,8 +293,8 @@
                     authorSpan.textContent = msg.userName;
                     
                     const textP = document.createElement("p");
-                    textP.className = "leading-snug font-medium";
-                    textP.textContent = msg.message; // Güvenli yazım
+                    textP.className = "leading-snug font-medium break-all";
+                    textP.textContent = msg.message;
                     
                     bubble.appendChild(authorSpan);
                     bubble.appendChild(textP);
@@ -316,163 +306,6 @@
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             });
         }
-
-        let activeCeleb = "elon";
-        const celebDetails = {
-            elon: { name: "Elon Musk", color: "from-blue-600/20 to-cyan-600/20", text: "text-blue-100", border: "border-blue-500/30", titleColor: "text-blue-400" },
-            einstein: { name: "Albert Einstein", color: "from-amber-600/20 to-yellow-600/20", text: "text-amber-100", border: "border-amber-500/30", titleColor: "text-amber-400" },
-            shakespeare: { name: "W. Shakespeare", color: "from-emerald-600/20 to-teal-600/20", text: "text-emerald-100", border: "border-emerald-500/30", titleColor: "text-emerald-400" }
-        };
-
-        const celebEngine = {
-            elon: {
-                welcome: "Mars için biletleri hazırladın mı dostum? Yoksa roket motorları hakkında mı konuşacağız? 🚀",
-                keywords: {
-                    "para": "Para sadece kaynak tahsisi için dijital bir veri tabanıdır. Önemli olan insanlığın geleceği!",
-                    "mars": "Mars'a gitmek zorundayız çünkü çok gezegenli bir tür olmak bizi yok olmaktan kurtaracak tek şey.",
-                    "yapay zeka": "Yapay zeka çok hızlı gelişiyor. Dikkatli olmazsak insanlık için tehlikeli olabilir.",
-                    "tesla": "Elektrikli araçlar sadece başlangıçtı. Şimdi sırada otonom sürüş devrimi var."
-                },
-                fallback: [
-                    "Bunu X uygulamasında tartışmalıyız! 😉",
-                    "İlginç bir yaklaşım, ama daha fazla roket gücüne ihtiyacımız var.",
-                    "Zaman değerlidir, bu yüzden doğrudan konuya gelelim."
-                ]
-            },
-            einstein: {
-                welcome: "Doğa kanunları üzerine felsefe yapmaya hazır mısın evlat? Zaman görelidir! 🧠",
-                keywords: {
-                    "zaman": "Zaman, sadece bir illüzyondan ibarettir. Geçmiş, şimdi ve gelecek aynı anda var olur.",
-                    "fizik": "Fizik, Tanrı'nın evreni yaratırken kullandığı kuralları anlama çabasıdır.",
-                    "formül": "E = mc² formülü kütle ile enerjinin aslında aynı şey olduğunu söyler.",
-                    "zeka": "Zeki olmanın ölçüsü, gerektiğinde düşüncelerini değiştirebilme yeteneğidir."
-                },
-                fallback: [
-                    "Hayal gücü bilgiden daha önemlidir, bunu sakın unutma.",
-                    "Doğaya derinlemesine bak, o zaman her şeyi daha iyi anlayacaksın.",
-                    "Önemli olan soru sormayı bırakmamaktır."
-                ]
-            },
-            shakespeare: {
-                welcome: "Kelimelerin büyülü dünyasına hoş geldin şair ruhlu dostum. 🎭",
-                keywords: {
-                    "aşk": "Aşk gözle değil, ruhla görülür; bu yüzden kanatlı aşk tanrısı Cupid hep kör tasvir edilir.",
-                    "hayat": "Dünya bir sahnedir, bizlerse sadece birer oyuncuyuz.",
-                    "ölüm": "Olmak ya da olmamak! İşte bütün mesele bu.",
-                    "kelime": "Kelimeler rüzgâra benzer, onları hissetmek gerek."
-                },
-                fallback: [
-                    "Hüzünlü bir gecenin ardından her zaman parlak bir gün doğar.",
-                    "Kalbinin sesini dinle, o sana en doğru piyesi fısıldayacaktır.",
-                    "Altın olan her şey parlamaz."
-                ]
-            }
-        };
-
-        function selectCelebrity(celebKey) {
-            activeCeleb = celebKey;
-            
-            document.querySelectorAll(".celebrity-btn").forEach(btn => {
-                const isTarget = btn.getAttribute("data-cel") === celebKey;
-                const activeClasses = "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20 scale-105 border-transparent";
-                const inactiveClasses = "bg-white/5 text-slate-400 border border-slate-800/80 hover:bg-white/10 hover:text-slate-200";
-                
-                if (isTarget) {
-                    btn.className = `celebrity-btn px-5 py-2 rounded-2xl text-xs font-bold transition-all duration-300 ${activeClasses}`;
-                } else {
-                    btn.className = `celebrity-btn px-5 py-2 rounded-2xl text-xs font-bold transition-all duration-300 ${inactiveClasses}`;
-                }
-            });
-
-            const details = celebDetails[celebKey];
-            const engine = celebEngine[celebKey];
-            aiMessages.innerHTML = "";
-            
-            const introDiv = document.createElement("div");
-            introDiv.className = `bg-gradient-to-br ${details.color} ${details.border} border p-4 rounded-2xl text-sm ${details.text} max-w-[85%] rounded-bl-none shadow-lg backdrop-blur-md`;
-            
-            const strongTitle = document.createElement("strong");
-            strongTitle.className = `block text-[9px] uppercase tracking-wider mb-1.5 font-black ${details.titleColor}`;
-            strongTitle.textContent = details.name;
-            
-            const textP = document.createElement("p");
-            textP.className = "leading-relaxed font-semibold";
-            textP.textContent = engine.welcome;
-
-            introDiv.appendChild(strongTitle);
-            introDiv.appendChild(textP);
-            aiMessages.appendChild(introDiv);
-        }
-
-        document.querySelectorAll(".celebrity-btn").forEach(btn => {
-            btn.addEventListener("click", () => selectCelebrity(btn.getAttribute("data-cel")));
-        });
-
-        const btnSendAi = document.getElementById("btn-send-ai");
-        const inputAi = document.getElementById("input-ai");
-        const aiMessages = document.getElementById("ai-messages");
-
-        btnSendAi.addEventListener("click", () => {
-            const userText = inputAi.value.trim();
-            if(!userText) return;
-
-            const userMsg = document.createElement("div");
-            userMsg.className = "flex justify-end w-full";
-            
-            const innerBubble = document.createElement("div");
-            innerBubble.className = "p-3.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-2xl text-sm max-w-[85%] rounded-br-none shadow-lg font-semibold";
-            innerBubble.textContent = userText;
-            
-            userMsg.appendChild(innerBubble);
-            aiMessages.appendChild(userMsg);
-            inputAi.value = "";
-            aiMessages.scrollTop = aiMessages.scrollHeight;
-
-            setTimeout(() => {
-                const engine = celebEngine[activeCeleb];
-                const details = celebDetails[activeCeleb];
-                let reply = "";
-
-                const lowerText = userText.toLowerCase();
-                let foundKeyword = false;
-
-                for (const key in engine.keywords) {
-                    if (lowerText.includes(key)) {
-                        reply = engine.keywords[key];
-                        foundKeyword = true;
-                        break;
-                    }
-                }
-
-                if (!foundKeyword) {
-                    reply = engine.fallback[Math.floor(Math.random() * engine.fallback.length)];
-                }
-
-                const aiMsg = document.createElement("div");
-                aiMsg.className = "flex justify-start w-full";
-                
-                const aiBubble = document.createElement("div");
-                aiBubble.className = `bg-gradient-to-br ${details.color} ${details.border} border p-4 rounded-2xl text-sm ${details.text} max-w-[85%] rounded-bl-none shadow-lg backdrop-blur-md`;
-                
-                const authorStrong = document.createElement("strong");
-                authorStrong.className = `block text-[9px] uppercase tracking-wider mb-1.5 font-black ${details.titleColor}`;
-                authorStrong.textContent = details.name;
-                
-                const replyP = document.createElement("p");
-                replyP.className = "leading-relaxed font-semibold";
-                replyP.textContent = reply;
-
-                aiBubble.appendChild(authorStrong);
-                aiBubble.appendChild(replyP);
-                aiMsg.appendChild(aiBubble);
-                aiMessages.appendChild(aiMsg);
-                aiMessages.scrollTop = aiMessages.scrollHeight;
-            }, 800);
-        });
-
-        inputAi.addEventListener("keypress", (e) => {
-            if(e.key === "Enter") btnSendAi.click();
-        });
     </script>
 </body>
 </html>
