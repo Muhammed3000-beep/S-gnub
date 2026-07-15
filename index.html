@@ -11,6 +11,9 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: #03050a;
             overflow-x: hidden;
+            /* Metin seçimini engelle (Uygulama hissi verir) */
+            user-select: none; 
+            -webkit-user-select: none;
         }
         .glass-card {
             background: rgba(10, 15, 30, 0.8);
@@ -26,6 +29,10 @@
         ::-webkit-scrollbar-thumb {
             background: #1e293b;
             border-radius: 99px;
+        }
+        /* Dosya yükleme inputunu gizle */
+        input[type="file"] {
+            display: none;
         }
     </style>
 </head>
@@ -127,7 +134,14 @@
                 <div id="view-feed" class="space-y-6">
                     <div class="glass-card rounded-2xl p-4 space-y-3">
                         <textarea id="post-input" placeholder="Tüm sisteme bir fısıltı gönder..." class="w-full bg-slate-950 border border-slate-850 rounded-xl p-3 text-xs text-slate-100 focus:outline-none resize-none" rows="3"></textarea>
-                        <div class="flex justify-end">
+                        
+                        <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded-xl border border-slate-800">
+                            <label class="cursor-pointer flex items-center space-x-2 text-cyan-400 hover:text-cyan-300 transition px-3 py-1.5 bg-cyan-950/40 rounded-lg border border-cyan-500/20">
+                                <span class="text-lg font-black">+</span>
+                                <span class="text-[10px] font-bold">Fotoğraf Ekle</span>
+                                <input type="file" id="post-image-upload" accept="image/*" onchange="previewImage(event)">
+                            </label>
+                            <span id="upload-status" class="text-[9px] text-emerald-400 font-bold hidden">Görsel hazır ✅</span>
                             <button onclick="createPost()" class="px-5 py-2 bg-gradient-to-r from-violet-600 to-cyan-500 rounded-xl text-xs font-bold text-white shadow">Payload Gönder 🚀</button>
                         </div>
                     </div>
@@ -193,6 +207,16 @@
 
     </div>
 
+    <script>
+        // GÜVENLİK KALKANI: F12 ve Sağ Tık Engelleme
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.onkeydown = function(e) {
+            if(e.keyCode == 123) return false; // F12
+            if(e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) return false; // Ctrl+Shift+I / J
+            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; // Ctrl+U
+        }
+    </script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
@@ -218,6 +242,7 @@
         let selectedColor = "#ef4444";
         let userCustomAvatar = "";
         let userCustomBio = "";
+        let pendingImageData = null; // Yüklenecek fotoğraf için
 
         const canvas = document.getElementById("real-canvas");
         const ctx = canvas.getContext("2d");
@@ -251,7 +276,6 @@
         window.shareCanvasAsImage = async function() {
             try {
                 const imageUrl = canvas.toDataURL("image/png");
-
                 await addDoc(collection(db, "aura_ultra_posts"), {
                     uid: currentUser.uid,
                     userName: currentUser.displayName,
@@ -261,7 +285,6 @@
                     replies: [],
                     createdAt: serverTimestamp()
                 });
-
                 window.showToast("Görsel akışta başarıyla yayınlandı!", "success");
                 window.switchTab('feed');
             } catch (err) {
@@ -274,7 +297,7 @@
             if(!container) return;
             const toast = document.createElement("div");
             toast.className = `p-3 rounded-xl text-xs font-bold border transition duration-300 pointer-events-auto ${
-                type === "success" ? "bg-emerald-950/90 border-emerald-500/20 text-emerald-300" : "bg-slate-900 border-slate-800 text-cyan-300"
+                type === "success" ? "bg-emerald-950/90 border-emerald-500/20 text-emerald-300" : (type === "error" ? "bg-rose-950/90 border-rose-500/20 text-rose-300" : "bg-slate-900 border-slate-800 text-cyan-300")
             }`;
             toast.textContent = "⚡ " + message;
             container.appendChild(toast);
@@ -282,16 +305,13 @@
         };
 
         window.googleLogin = function() {
-            signInWithPopup(auth, provider)
-                .then((result) => {
-                    currentUser = result.user;
-                    window.showToast("Başarıyla oturum açıldı!", "success");
-                    updateUI(result.user);
-                })
-                .catch((error) => {
-                    console.error("Giriş Hatası:", error);
-                    window.showToast("Giriş Başarısız: " + error.message, "error");
-                });
+            signInWithPopup(auth, provider).then((result) => {
+                currentUser = result.user;
+                window.showToast("Başarıyla oturum açıldı!", "success");
+                updateUI(result.user);
+            }).catch((error) => {
+                window.showToast("Giriş Başarısız: " + error.message, "error");
+            });
         };
 
         window.logout = function() {
@@ -306,7 +326,6 @@
 
         async function updateUI(user) {
             if (!user) return;
-            
             document.getElementById("login-section").style.display = "none";
             document.getElementById("app-section").style.display = "block";
             document.getElementById("user-display").style.display = "flex";
@@ -330,7 +349,6 @@
                     }, { merge: true });
                 }
             } catch (e) {
-                console.warn("Firestore profil yükleme es geçildi:", e);
                 userCustomAvatar = user.photoURL;
                 userCustomBio = "Henüz bir kozmik biyografi eklenmedi.";
             }
@@ -341,13 +359,9 @@
             document.getElementById("side-user-name").textContent = user.displayName;
             document.getElementById("side-user-bio").textContent = userCustomBio;
 
-            try {
-                listenFeed();
-                listenChat();
-                listenPolls();
-            } catch (err) {
-                console.error("Dinleyiciler başlatılamadı:", err);
-            }
+            listenFeed();
+            listenChat();
+            listenPolls();
         }
 
         onAuthStateChanged(auth, (user) => {
@@ -371,23 +385,18 @@
         window.saveProfile = async function() {
             const newAvatar = document.getElementById("edit-avatar-url").value.trim();
             const newBio = document.getElementById("edit-bio").value.trim();
-
             try {
-                const userDocRef = doc(db, "aura_users", currentUser.uid);
-                await setDoc(userDocRef, {
+                await setDoc(doc(db, "aura_users", currentUser.uid), {
                     userPhoto: newAvatar || currentUser.photoURL,
                     bio: newBio || "Henüz bir kozmik biyografi eklenmedi."
                 }, { merge: true });
-
                 userCustomAvatar = newAvatar || currentUser.photoURL;
                 userCustomBio = newBio || "Henüz bir kozmik biyografi eklenmedi.";
-
                 document.getElementById("user-avatar").src = userCustomAvatar;
                 document.getElementById("side-user-avatar").src = userCustomAvatar;
                 document.getElementById("side-user-bio").textContent = userCustomBio;
-
                 window.toggleProfileModal(false);
-                window.showToast("Profil verileri başarıyla güncellendi!", "success");
+                window.showToast("Profil güncellendi!", "success");
             } catch(err) {
                 window.showToast("Profil güncellenirken hata oluştu.", "error");
             }
@@ -402,30 +411,45 @@
             document.getElementById(`btn-tab-${tab}`).className = "w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 text-violet-400 border border-violet-500/20";
         };
 
+        // FOTOĞRAF ÖNİZLEME VE BASE64'E ÇEVİRME
+        window.previewImage = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    pendingImageData = e.target.result;
+                    document.getElementById("upload-status").classList.remove("hidden");
+                    window.showToast("Görsel gönderilmeye hazır!");
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
         window.createPost = async function() {
             const val = document.getElementById("post-input").value.trim();
-            if(!val) return;
+            if(!val && !pendingImageData) return;
 
             await addDoc(collection(db, "aura_ultra_posts"), {
                 uid: currentUser.uid,
                 userName: currentUser.displayName,
                 userPhoto: userCustomAvatar || currentUser.photoURL,
                 content: val,
+                sharedImage: pendingImageData || null,
                 replies: [], 
                 createdAt: serverTimestamp()
             });
+            
             document.getElementById("post-input").value = "";
+            document.getElementById("post-image-upload").value = "";
+            document.getElementById("upload-status").classList.add("hidden");
+            pendingImageData = null;
             window.showToast("Gönderi akışa fırlatıldı!");
         };
 
         window.deletePost = async function(postId) {
-            if(confirm("Bu gönderiyi kozmik boşluğa göndermek istediğinden emin misin?")) {
-                try {
-                    await deleteDoc(doc(db, "aura_ultra_posts", postId));
-                    window.showToast("Gönderi silindi.", "success");
-                } catch (err) {
-                    window.showToast("Silme işlemi başarısız.", "error");
-                }
+            if(confirm("Silmek istediğine emin misin?")) {
+                await deleteDoc(doc(db, "aura_ultra_posts", postId));
+                window.showToast("Gönderi silindi.", "success");
             }
         };
 
@@ -433,39 +457,16 @@
             const replyInput = document.getElementById(`reply-in-${postId}`);
             const replyText = replyInput.value.trim();
             if(!replyText) return;
-
-            try {
-                const postRef = doc(db, "aura_ultra_posts", postId);
-                await updateDoc(postRef, {
-                    replies: arrayUnion({
-                        uid: currentUser.uid,
-                        userName: currentUser.displayName,
-                        content: replyText,
-                        timestamp: Date.now()
-                    })
-                });
-                replyInput.value = "";
-                window.showToast("Yanıtınız başarıyla iletildi!", "success");
-            } catch (err) {
-                window.showToast("Yanıt gönderilemedi.", "error");
-            }
-        };
-
-        window.addFriend = async function(targetUid, targetName) {
-            if(targetUid === currentUser.uid) {
-                window.showToast("Kendinle zaten en yakın arkadaşsın! 🌌");
-                return;
-            }
-            try {
-                const userFriendRef = collection(db, "aura_users", currentUser.uid, "friends");
-                await setDoc(doc(userFriendRef, targetUid), {
-                    friendName: targetName,
-                    addedAt: Date.now()
-                });
-                window.showToast(`${targetName} arkadaş olarak eklendi! 👥`, "success");
-            } catch (err) {
-                window.showToast("Arkadaş ekleme başarısız.", "error");
-            }
+            await updateDoc(doc(db, "aura_ultra_posts", postId), {
+                replies: arrayUnion({
+                    uid: currentUser.uid,
+                    userName: currentUser.displayName,
+                    content: replyText,
+                    timestamp: Date.now()
+                })
+            });
+            replyInput.value = "";
+            window.showToast("Yanıt iletildi!", "success");
         };
 
         function listenFeed() {
@@ -476,62 +477,27 @@
                 container.innerHTML = "";
                 snapshot.forEach(docSnap => {
                     const p = docSnap.data();
-                    const postId = docSnap.id;
                     const el = document.createElement("div");
-                    el.className = "glass-card rounded-2xl p-4 space-y-3.5 border border-slate-800 hover:border-slate-700/50 transition";
-                    
-                    let imgHtml = "";
-                    if (p.sharedImage) {
-                        imgHtml = `<img src="${p.sharedImage}" class="max-w-[200px] w-full rounded-xl border border-slate-800 shadow-inner mt-2">`;
-                    }
-
-                    let deleteBtnHtml = "";
-                    if(currentUser && p.uid === currentUser.uid) {
-                        deleteBtnHtml = `<button onclick="deletePost('${postId}')" class="text-[10px] bg-rose-950/40 text-rose-400 hover:bg-rose-900/50 px-2.5 py-1 rounded-lg font-bold transition">Sil 🗑️</button>`;
-                    }
-
-                    let addFriendBtnHtml = "";
-                    if(currentUser && p.uid !== currentUser.uid) {
-                        addFriendBtnHtml = `<button onclick="addFriend('${p.uid}', '${p.userName}')" class="text-[9px] bg-cyan-950/80 text-cyan-300 hover:bg-cyan-900 px-2 py-0.5 rounded border border-cyan-500/20 font-medium ml-2">👥 Ekle</button>`;
-                    }
-
-                    let repliesHtml = "";
-                    if(p.replies && p.replies.length > 0) {
-                        repliesHtml = `<div class="mt-3 pt-3 border-t border-slate-900 space-y-2 bg-slate-950/30 p-2 rounded-xl">`;
-                        p.replies.forEach(r => {
-                            repliesHtml += `
-                                <div class="text-[11px] leading-relaxed text-slate-400">
-                                    <span class="font-extrabold text-slate-200">${r.userName}:</span> ${r.content}
-                                </div>
-                            `;
-                        });
-                        repliesHtml += `</div>`;
-                    }
+                    el.className = "glass-card rounded-2xl p-4 space-y-3.5 border border-slate-800";
+                    let imgHtml = p.sharedImage ? `<img src="${p.sharedImage}" class="max-w-[300px] w-full rounded-xl border border-slate-800 shadow-inner mt-2">` : "";
+                    let deleteBtnHtml = (currentUser && p.uid === currentUser.uid) ? `<button onclick="deletePost('${docSnap.id}')" class="text-[10px] text-rose-400">Sil 🗑️</button>` : "";
+                    let repliesHtml = p.replies && p.replies.length > 0 ? `<div class="mt-3 pt-3 border-t border-slate-900 space-y-2 bg-slate-950/30 p-2 rounded-xl">${p.replies.map(r => `<div class="text-[11px] text-slate-400"><span class="font-extrabold text-slate-200">${r.userName}:</span> ${r.content}</div>`).join('')}</div>` : "";
 
                     el.innerHTML = `
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">
-                                <img src="${p.userPhoto || 'https://i.pravatar.cc/100'}" class="w-8 h-8 rounded-full border border-slate-800 object-cover">
-                                <div>
-                                    <div class="flex items-center">
-                                        <span class="font-bold text-xs text-slate-200 block">${p.userName}</span>
-                                        ${addFriendBtnHtml}
-                                    </div>
-                                    <span class="text-[8px] text-violet-400 font-extrabold uppercase tracking-widest block">Aura Node</span>
-                                </div>
+                                <img src="${p.userPhoto}" class="w-8 h-8 rounded-full border border-slate-800 object-cover">
+                                <div><span class="font-bold text-xs text-slate-200 block">${p.userName}</span></div>
                             </div>
                             ${deleteBtnHtml}
                         </div>
-                        <p class="text-xs text-slate-300 leading-relaxed break-words">${p.content}</p>
+                        <p class="text-xs text-slate-300 break-words">${p.content}</p>
                         ${imgHtml}
-                        
                         ${repliesHtml}
-
                         <div class="flex items-center space-x-2 mt-2 pt-2 border-t border-slate-900/50">
-                            <input type="text" id="reply-in-${postId}" placeholder="Bu düğüme yanıt ver..." class="flex-1 bg-slate-950 border border-slate-900 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 focus:outline-none">
-                            <button onclick="replyToPost('${postId}')" class="px-3 py-1.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-lg text-[10px] font-bold text-white">Yanıtla</button>
-                        </div>
-                    `;
+                            <input type="text" id="reply-in-${docSnap.id}" placeholder="Yanıt ver..." class="flex-1 bg-slate-950 border border-slate-900 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 focus:outline-none">
+                            <button onclick="replyToPost('${docSnap.id}')" class="px-3 py-1.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-lg text-[10px] font-bold text-white">Yanıtla</button>
+                        </div>`;
                     container.appendChild(el);
                 });
             });
@@ -540,61 +506,29 @@
         window.sendChat = function(e) {
             e.preventDefault();
             const input = document.getElementById("chat-input");
-            const val = input.value.trim();
-            if(!val) return;
-
-            const chatRef = ref(rtdb, "messages");
-            const newMsgRef = push(chatRef);
-            set(newMsgRef, {
-                uid: currentUser.uid,
-                userName: currentUser.displayName,
-                message: val,
-                timestamp: Date.now()
-            });
+            if(!input.value.trim()) return;
+            push(ref(rtdb, "messages"), { uid: currentUser.uid, userName: currentUser.displayName, message: input.value.trim(), timestamp: Date.now() });
             input.value = "";
         };
 
         function listenChat() {
-            const chatRef = ref(rtdb, "messages");
             const container = document.getElementById("chat-container");
             if(!container) return;
             container.innerHTML = ""; 
-
-            onChildAdded(chatRef, (snapshot) => {
+            onChildAdded(ref(rtdb, "messages"), (snapshot) => {
                 const msg = snapshot.val();
                 const isMe = msg.uid === currentUser.uid;
                 const el = document.createElement("div");
                 el.className = `flex ${isMe ? 'justify-end' : 'justify-start'}`;
-                el.innerHTML = `
-                    <div class="max-w-[80%] p-2.5 rounded-xl text-xs ${isMe ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-100'}">
-                        <span class="font-bold text-[8px] block text-slate-400 mb-0.5">${msg.userName}</span>
-                        <p class="break-all font-medium">${msg.message}</p>
-                    </div>
-                `;
+                el.innerHTML = `<div class="max-w-[80%] p-2.5 rounded-xl text-xs ${isMe ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-100'}"><span class="font-bold text-[8px] block text-slate-400 mb-0.5">${msg.userName}</span><p class="break-all font-medium">${msg.message}</p></div>`;
                 container.appendChild(el);
                 container.scrollTop = container.scrollHeight;
             });
         }
 
         window.searchNetwork = function() {
-            const queryVal = document.getElementById("search-input").value.toLowerCase().trim();
-            const container = document.getElementById("feed-container");
-            if(!container) return;
-            
-            if (queryVal === "") {
-                listenFeed();
-                return;
-            }
-
-            const cards = container.children;
-            for (let card of cards) {
-                const txt = card.innerText.toLowerCase();
-                if (txt.includes(queryVal)) {
-                    card.style.display = "block";
-                } else {
-                    card.style.display = "none";
-                }
-            }
+            const q = document.getElementById("search-input").value.toLowerCase().trim();
+            for (let card of document.getElementById("feed-container").children) card.style.display = card.innerText.toLowerCase().includes(q) ? "block" : "none";
         };
 
         window.addNewPoll = async function() {
@@ -602,64 +536,52 @@
             const o1 = document.getElementById("new-poll-opt1").value.trim();
             const o2 = document.getElementById("new-poll-opt2").value.trim();
             if(!q || !o1 || !o2) return;
-
-            await addDoc(collection(db, "aura_ultra_polls"), {
-                question: q,
-                option1: o1,
-                option2: o2,
-                votes1: 0,
-                votes2: 0,
-                createdAt: serverTimestamp()
-            });
-
+            await addDoc(collection(db, "aura_ultra_polls"), { question: q, option1: o1, option2: o2, votes1: 0, votes2: 0, votedUsers: [], createdAt: serverTimestamp() });
             document.getElementById("new-poll-title").value = "";
             document.getElementById("new-poll-opt1").value = "";
             document.getElementById("new-poll-opt2").value = "";
-            window.showToast("Yeni anket başarıyla başlatıldı!");
+            window.showToast("Anket başlatıldı!");
         };
 
+        // GÜVENLİ OY SİSTEMİ (Tek Oy Hakkı)
         window.votePollDynamic = async function(id, optionIndex) {
             const pollRef = doc(db, "aura_ultra_polls", id);
-            if (optionIndex === 1) {
-                await updateDoc(pollRef, { votes1: increment(1) });
-            } else {
-                await updateDoc(pollRef, { votes2: increment(1) });
+            const snap = await getDoc(pollRef);
+            if(snap.exists()) {
+                const data = snap.data();
+                if(data.votedUsers && data.votedUsers.includes(currentUser.uid)) {
+                    window.showToast("Bu ankette zaten oy kullandınız! 🚫", "error");
+                    return;
+                }
+                if (optionIndex === 1) await updateDoc(pollRef, { votes1: increment(1), votedUsers: arrayUnion(currentUser.uid) });
+                else await updateDoc(pollRef, { votes2: increment(1), votedUsers: arrayUnion(currentUser.uid) });
+                window.showToast("Oyunuz başarıyla kaydedildi! ✅", "success");
             }
-            window.showToast("Oyunuz başarıyla kaydedildi.");
         };
 
         function listenPolls() {
-            const q = query(collection(db, "aura_ultra_polls"), orderBy("createdAt", "desc"), limit(3));
-            onSnapshot(q, (snapshot) => {
+            onSnapshot(query(collection(db, "aura_ultra_polls"), orderBy("createdAt", "desc"), limit(3)), (snapshot) => {
                 const wrapper = document.getElementById("polls-list-wrapper");
                 if(!wrapper) return;
                 wrapper.innerHTML = "";
                 snapshot.forEach(docSnap => {
-                    const poll = docSnap.data();
-                    const pollId = docSnap.id;
-                    const t1 = poll.votes1 || 0;
-                    const t2 = poll.votes2 || 0;
-                    const total = t1 + t2 || 1;
-                    const pct1 = Math.round((t1/total)*100);
-                    const pct2 = Math.round((t2/total)*100);
-
+                    const p = docSnap.data();
+                    const t1 = p.votes1 || 0, t2 = p.votes2 || 0, total = t1 + t2 || 1;
+                    const pct1 = Math.round((t1/total)*100), pct2 = Math.round((t2/total)*100);
                     const el = document.createElement("div");
                     el.className = "bg-slate-950/60 p-3 rounded-xl border border-slate-900 space-y-2";
                     el.innerHTML = `
-                        <span class="text-[11px] font-bold text-slate-200 block">${poll.question}</span>
+                        <span class="text-[11px] font-bold text-slate-200 block">${p.question}</span>
                         <div class="space-y-2">
-                            <button onclick="votePollDynamic('${pollId}', 1)" class="w-full text-left relative overflow-hidden p-2 rounded bg-slate-900 text-[10px] flex justify-between items-center z-10">
+                            <button onclick="votePollDynamic('${docSnap.id}', 1)" class="w-full text-left relative overflow-hidden p-2 rounded bg-slate-900 text-[10px] flex justify-between items-center z-10">
                                 <div class="absolute top-0 left-0 bottom-0 bg-violet-600/15" style="width: ${pct1}%"></div>
-                                <span class="relative z-20">${poll.option1}</span>
-                                <span class="relative z-20 text-violet-400 font-bold">${pct1}% (${t1})</span>
+                                <span class="relative z-20">${p.option1}</span><span class="relative z-20 text-violet-400 font-bold">${pct1}%</span>
                             </button>
-                            <button onclick="votePollDynamic('${pollId}', 2)" class="w-full text-left relative overflow-hidden p-2 rounded bg-slate-900 text-[10px] flex justify-between items-center z-10">
+                            <button onclick="votePollDynamic('${docSnap.id}', 2)" class="w-full text-left relative overflow-hidden p-2 rounded bg-slate-900 text-[10px] flex justify-between items-center z-10">
                                 <div class="absolute top-0 left-0 bottom-0 bg-cyan-600/15" style="width: ${pct2}%"></div>
-                                <span class="relative z-20">${poll.option2}</span>
-                                <span class="relative z-20 text-cyan-400 font-bold">${pct2}% (${t2})</span>
+                                <span class="relative z-20">${p.option2}</span><span class="relative z-20 text-cyan-400 font-bold">${pct2}%</span>
                             </button>
-                        </div>
-                    `;
+                        </div>`;
                     wrapper.appendChild(el);
                 });
             });
