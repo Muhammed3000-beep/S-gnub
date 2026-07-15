@@ -33,7 +33,7 @@
 
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
-    <div id="profile-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div id="profile-modal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
         <div class="glass-card max-w-md w-full rounded-3xl p-6 border border-cyan-500/20 space-y-4">
             <div class="flex justify-between items-center">
                 <h3 class="text-sm font-black text-cyan-400 uppercase tracking-widest">🧬 Profil Protokolü</h3>
@@ -64,7 +64,7 @@
             </div>
         </div>
         
-        <div id="user-display" class="hidden flex items-center space-x-4">
+        <div id="user-display" style="display: none;" class="items-center space-x-4">
             <div class="flex items-center space-x-3">
                 <img id="user-avatar" src="" class="w-8 h-8 rounded-full border-2 border-cyan-500 shadow-md">
                 <div class="flex flex-col">
@@ -79,7 +79,7 @@
     <div class="flex-1 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 lg:p-6">
         
         <aside class="lg:col-span-3 space-y-4">
-            <div id="side-profile-card" class="hidden glass-card rounded-2xl p-4 border border-violet-500/10 text-center space-y-3">
+            <div id="side-profile-card" style="display: none;" class="glass-card rounded-2xl p-4 border border-violet-500/10 text-center space-y-3">
                 <div class="relative w-16 h-16 mx-auto">
                     <img id="side-user-avatar" src="https://i.pravatar.cc/100" class="w-full h-full rounded-full border-2 border-violet-500 shadow-md object-cover">
                 </div>
@@ -122,7 +122,7 @@
                 </div>
             </div>
 
-            <div id="app-section" class="hidden space-y-6">
+            <div id="app-section" style="display: none;" class="space-y-6">
                 
                 <div id="view-feed" class="space-y-6">
                     <div class="glass-card rounded-2xl p-4 space-y-3">
@@ -134,7 +134,7 @@
                     <div id="feed-container" class="space-y-4"></div>
                 </div>
 
-                <div id="view-chat" class="hidden glass-card rounded-2xl flex flex-col h-[60vh] border border-slate-800/60 overflow-hidden">
+                <div id="view-chat" style="display: none;" class="glass-card rounded-2xl flex flex-col h-[60vh] border border-slate-800/60 overflow-hidden">
                     <div class="p-3 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
                         <span class="text-xs font-bold text-cyan-400">● GERÇEK ZAMANLI SOHBET</span>
                         <span class="text-[9px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded font-black animate-pulse">LIVE DB</span>
@@ -146,7 +146,7 @@
                     </form>
                 </div>
 
-                <div id="view-canvas" class="hidden space-y-6">
+                <div id="view-canvas" style="display: none;" class="space-y-6">
                     <div class="glass-card rounded-2xl p-5 space-y-5 border border-cyan-500/10">
                         <div class="flex justify-between items-center">
                             <h2 class="text-sm font-extrabold text-cyan-400">🎨 Gerçek Zamanlı PNG Tuval</h2>
@@ -271,8 +271,9 @@
 
         window.showToast = function(message, type = "info") {
             const container = document.getElementById("toast-container");
+            if(!container) return;
             const toast = document.createElement("div");
-            toast.className = `p-3 rounded-xl text-xs font-bold border transition duration-300 ${
+            toast.className = `p-3 rounded-xl text-xs font-bold border transition duration-300 pointer-events-auto ${
                 type === "success" ? "bg-emerald-950/90 border-emerald-500/20 text-emerald-300" : "bg-slate-900 border-slate-800 text-cyan-300"
             }`;
             toast.textContent = "⚡ " + message;
@@ -285,8 +286,10 @@
                 .then((result) => {
                     currentUser = result.user;
                     window.showToast("Başarıyla oturum açıldı!", "success");
+                    updateUI(result.user);
                 })
                 .catch((error) => {
+                    console.error("Giriş Hatası:", error);
                     window.showToast("Giriş Başarısız: " + error.message, "error");
                 });
         };
@@ -294,22 +297,22 @@
         window.logout = function() {
             signOut(auth).then(() => {
                 currentUser = null;
-                document.getElementById("login-section").classList.remove("hidden");
-                document.getElementById("app-section").classList.add("hidden");
-                document.getElementById("user-display").classList.add("hidden");
-                document.getElementById("side-profile-card").classList.add("hidden");
+                document.getElementById("login-section").style.display = "block";
+                document.getElementById("app-section").style.display = "none";
+                document.getElementById("user-display").style.display = "none";
+                document.getElementById("side-profile-card").style.display = "none";
             });
         };
 
-        onAuthStateChanged(async (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById("login-section").classList.add("hidden");
-                document.getElementById("app-section").classList.remove("hidden");
-                document.getElementById("user-display").classList.remove("hidden");
-                document.getElementById("side-profile-card").classList.remove("hidden");
-                
-                // Firestore'dan özelleştirilmiş profil bilgilerini çekiyoruz
+        async function updateUI(user) {
+            if (!user) return;
+            
+            document.getElementById("login-section").style.display = "none";
+            document.getElementById("app-section").style.display = "block";
+            document.getElementById("user-display").style.display = "flex";
+            document.getElementById("side-profile-card").style.display = "block";
+            
+            try {
                 const userDocRef = doc(db, "aura_users", user.uid);
                 const userDocSnap = await getDoc(userDocRef);
                 
@@ -324,35 +327,47 @@
                         userName: user.displayName,
                         userPhoto: user.photoURL,
                         bio: userCustomBio
-                    });
+                    }, { merge: true });
                 }
+            } catch (e) {
+                console.warn("Firestore profil yükleme es geçildi:", e);
+                userCustomAvatar = user.photoURL;
+                userCustomBio = "Henüz bir kozmik biyografi eklenmedi.";
+            }
 
-                // Arayüzdeki resimleri ve metinleri eşle
-                document.getElementById("user-avatar").src = userCustomAvatar || "https://i.pravatar.cc/100";
-                document.getElementById("user-name-tag").textContent = user.displayName;
-                document.getElementById("side-user-avatar").src = userCustomAvatar || "https://i.pravatar.cc/100";
-                document.getElementById("side-user-name").textContent = user.displayName;
-                document.getElementById("side-user-bio").textContent = userCustomBio;
+            document.getElementById("user-avatar").src = userCustomAvatar || "https://i.pravatar.cc/100";
+            document.getElementById("user-name-tag").textContent = user.displayName;
+            document.getElementById("side-user-avatar").src = userCustomAvatar || "https://i.pravatar.cc/100";
+            document.getElementById("side-user-name").textContent = user.displayName;
+            document.getElementById("side-user-bio").textContent = userCustomBio;
 
+            try {
                 listenFeed();
                 listenChat();
                 listenPolls();
+            } catch (err) {
+                console.error("Dinleyiciler başlatılamadı:", err);
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                updateUI(user);
             }
         });
 
-        // MODAL AÇMA KAPAMA
         window.toggleProfileModal = function(show) {
             const modal = document.getElementById("profile-modal");
             if(show) {
                 document.getElementById("edit-avatar-url").value = userCustomAvatar;
                 document.getElementById("edit-bio").value = userCustomBio === "Henüz bir kozmik biyografi eklenmedi." ? "" : userCustomBio;
-                modal.classList.remove("hidden");
+                modal.style.display = "flex";
             } else {
-                modal.classList.add("hidden");
+                modal.style.display = "none";
             }
         };
 
-        // PROFİLİ FIRESTORE'A KAYDETME
         window.saveProfile = async function() {
             const newAvatar = document.getElementById("edit-avatar-url").value.trim();
             const newBio = document.getElementById("edit-bio").value.trim();
@@ -380,10 +395,10 @@
 
         window.switchTab = function(tab) {
             ["feed", "chat", "canvas"].forEach(t => {
-                document.getElementById(`view-${t}`).classList.add("hidden");
+                document.getElementById(`view-${t}`).style.display = "none";
                 document.getElementById(`btn-tab-${t}`).className = "w-full text-left px-4 py-3 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-900 transition";
             });
-            document.getElementById(`view-${tab}`).classList.remove("hidden");
+            document.getElementById(`view-${tab}`).style.display = tab === 'chat' ? 'flex' : 'block';
             document.getElementById(`btn-tab-${tab}`).className = "w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 text-violet-400 border border-violet-500/20";
         };
 
@@ -394,7 +409,7 @@
             await addDoc(collection(db, "aura_ultra_posts"), {
                 uid: currentUser.uid,
                 userName: currentUser.displayName,
-                userPhoto: userCustomAvatar || currentUser.photoURL, // Güncel profil resmini gönderiye basıyoruz
+                userPhoto: userCustomAvatar || currentUser.photoURL,
                 content: val,
                 replies: [], 
                 createdAt: serverTimestamp()
@@ -457,6 +472,7 @@
             const q = query(collection(db, "aura_ultra_posts"), orderBy("createdAt", "desc"), limit(25));
             onSnapshot(q, (snapshot) => {
                 const container = document.getElementById("feed-container");
+                if(!container) return;
                 container.innerHTML = "";
                 snapshot.forEach(docSnap => {
                     const p = docSnap.data();
@@ -541,6 +557,7 @@
         function listenChat() {
             const chatRef = ref(rtdb, "messages");
             const container = document.getElementById("chat-container");
+            if(!container) return;
             container.innerHTML = ""; 
 
             onChildAdded(chatRef, (snapshot) => {
@@ -562,6 +579,7 @@
         window.searchNetwork = function() {
             const queryVal = document.getElementById("search-input").value.toLowerCase().trim();
             const container = document.getElementById("feed-container");
+            if(!container) return;
             
             if (queryVal === "") {
                 listenFeed();
@@ -572,9 +590,9 @@
             for (let card of cards) {
                 const txt = card.innerText.toLowerCase();
                 if (txt.includes(queryVal)) {
-                    card.classList.remove("hidden");
+                    card.style.display = "block";
                 } else {
-                    card.classList.add("hidden");
+                    card.style.display = "none";
                 }
             }
         };
@@ -614,6 +632,7 @@
             const q = query(collection(db, "aura_ultra_polls"), orderBy("createdAt", "desc"), limit(3));
             onSnapshot(q, (snapshot) => {
                 const wrapper = document.getElementById("polls-list-wrapper");
+                if(!wrapper) return;
                 wrapper.innerHTML = "";
                 snapshot.forEach(docSnap => {
                     const poll = docSnap.data();
