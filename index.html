@@ -38,6 +38,27 @@
 
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
+    <div id="incoming-call-modal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-pulse">
+        <div class="glass-card max-w-sm w-full rounded-3xl p-6 border-2 border-fuchsia-500 text-center space-y-4">
+            <div class="w-16 h-16 bg-fuchsia-600/20 rounded-full flex items-center justify-center mx-auto animate-bounce text-2xl">📞</div>
+            <h3 class="text-sm font-black text-fuchsia-400 uppercase tracking-widest">⚡ Kozmik Bağlantı İsteği</h3>
+            <p id="caller-name-info" class="text-xs text-slate-300">Biri seni sesli olarak arıyor...</p>
+            <div class="flex space-x-3 justify-center pt-2">
+                <button onclick="acceptCall()" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-bold text-white shadow transition">Kabul Et 🟩</button>
+                <button onclick="rejectCall()" class="px-6 py-2 bg-rose-600 hover:bg-rose-500 rounded-xl text-xs font-bold text-white shadow transition">Reddet 🟥</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="active-call-panel" style="display: none;" class="fixed bottom-5 left-5 z-50 glass-card p-4 rounded-2xl border border-emerald-500/30 flex items-center space-x-4">
+        <div class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></div>
+        <div class="text-[10px] font-bold text-slate-300">
+            <span>🎤 Aktif Sesli Kanal</span>
+            <span id="call-duration" class="block text-emerald-400 font-mono text-[9px]">Görüşülüyor...</span>
+        </div>
+        <button onclick="hangUpCall()" class="px-3 py-1 bg-rose-600 hover:bg-rose-500 rounded-lg text-[9px] font-bold text-white transition">Kapat</button>
+    </div>
+
     <div id="profile-modal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
         <div class="glass-card max-w-md w-full rounded-3xl p-6 border border-cyan-500/20 space-y-4">
             <div class="flex justify-between items-center">
@@ -96,10 +117,10 @@
             </div>
 
             <div class="glass-card rounded-2xl p-4 space-y-3 border border-fuchsia-500/20">
-                <h3 class="text-[10px] font-black text-fuchsia-400 uppercase tracking-widest">📡 E-POSTA İLE BUL</h3>
+                <h3 class="text-[10px] font-black text-fuchsia-400 uppercase tracking-widest">📞 SESLİ GÖRÜŞME ARAMA</h3>
                 <div class="flex space-x-2">
                     <input type="email" id="email-search-input" placeholder="Kullanıcı e-postası..." class="w-full bg-slate-950 border border-slate-800 focus:border-fuchsia-500 rounded-xl px-3 py-2 text-[11px] text-slate-100 placeholder-slate-500 focus:outline-none transition">
-                    <button onclick="searchUserByEmail()" class="bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-3 py-2 rounded-xl text-[10px] font-bold transition">Ara</button>
+                    <button onclick="searchUserByEmail()" class="bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-3 py-2 rounded-xl text-[10px] font-bold transition">Bul</button>
                 </div>
                 <div id="email-search-result" class="mt-2 empty:hidden"></div>
             </div>
@@ -214,6 +235,9 @@
 
     </div>
 
+    <audio id="local-audio" autoplay muted style="display:none;"></audio>
+    <audio id="remote-audio" autoplay style="display:none;"></audio>
+
     <script>
         document.addEventListener('contextmenu', event => event.preventDefault());
         document.onkeydown = function(e) {
@@ -227,7 +251,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, updateDoc, increment, deleteDoc, arrayUnion, where, getDocs } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-        import { getDatabase, ref, push, set, onChildAdded } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
+        import { getDatabase, ref, push, set, onChildAdded, onValue, remove } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDXpYmC0IzpOpwGMkgswBDlo6h5aOlSUEU",
@@ -250,9 +274,19 @@
         let userCustomBio = "";
         let pendingImageData = null; 
 
+        // WebRTC Global Değişkenler
+        let localStream = null;
+        let peerConnection = null;
+        let activeCallRef = null;
+        let targetUserUid = null;
+
         const canvas = document.getElementById("real-canvas");
         const ctx = canvas.getContext("2d");
         const pixelSize = 16; 
+
+        const rtcConfig = {
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        };
 
         function initCanvas() {
             ctx.fillStyle = "#03050a";
@@ -320,7 +354,6 @@
                     const userData = userDocSnap.data();
                     userCustomAvatar = userData.userPhoto || user.photoURL;
                     userCustomBio = userData.bio || "Henüz bir kozmik biyografi eklenmedi.";
-                    // E-postayı her ihtimale karşı güncelliyoruz (Arama için)
                     await setDoc(userDocRef, { email: user.email }, { merge: true });
                 } else {
                     userCustomAvatar = user.photoURL;
@@ -346,6 +379,7 @@
             listenFeed();
             listenChat();
             listenPolls();
+            listenForCalls(); // Canlı WebRTC çağrı dinleme motoru başlatıldı
         }
 
         onAuthStateChanged(auth, (user) => {
@@ -395,7 +429,7 @@
             document.getElementById(`btn-tab-${tab}`).className = "w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 text-violet-400 border border-violet-500/20";
         };
 
-        // YENİ: E-POSTA İLE ARAMA FONKSİYONU
+        // E-POSTA İLE BUL & SESLİ ARAMA BAŞLAT
         window.searchUserByEmail = async function() {
             const email = document.getElementById("email-search-input").value.trim().toLowerCase();
             const resContainer = document.getElementById("email-search-result");
@@ -413,16 +447,25 @@
                     resContainer.innerHTML = "";
                     querySnapshot.forEach((docSnap) => {
                         const u = docSnap.data();
+                        const uid = docSnap.id;
+                        
+                        if (uid === currentUser.uid) {
+                            resContainer.innerHTML = `<span class="text-yellow-400 text-[10px]">Kendi kendinizi arayamazsınız.</span>`;
+                            return;
+                        }
+
                         resContainer.innerHTML += `
                             <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 mt-2">
                                 <div class="flex items-center space-x-3">
                                     <img src="${u.userPhoto}" class="w-8 h-8 rounded-full border border-slate-700">
                                     <div class="flex flex-col">
                                         <span class="text-[11px] font-bold text-slate-200">${u.userName}</span>
-                                        <span class="text-[9px] text-slate-400">${u.email}</span>
+                                        <span class="text-[9px] text-slate-400 truncate max-w-[100px]">${u.email}</span>
                                     </div>
                                 </div>
-                                <span class="text-[9px] bg-emerald-900/50 text-emerald-400 px-2 py-1 rounded font-bold">Bulundu</span>
+                                <button onclick="startVoiceCall('${uid}', '${u.userName}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 rounded-lg text-[9px] font-black transition flex items-center space-x-1">
+                                    <span>📞</span> <span>ARA</span>
+                                </button>
                             </div>
                         `;
                     });
@@ -432,7 +475,203 @@
             }
         };
 
-        // GÜÇLÜ SIKIŞTIRMA MOTORU (Büyük fotoğrafları veritabanına uydurur)
+        // ==========================================
+        // WebRTC GERÇEK ZAMANLI SESLİ GÖRÜŞME SİSTEMİ
+        // ==========================================
+
+        // Arama Başlatma (Arayan Taraf)
+        window.startVoiceCall = async function(targetUid, targetName) {
+            window.showToast(`${targetName} aranıyor...`);
+            targetUserUid = targetUid;
+            
+            // Mikrofon izni al
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                document.getElementById("local-audio").srcObject = localStream;
+            } catch (err) {
+                window.showToast("Mikrofon izni verilmedi!", "error");
+                return;
+            }
+
+            // Çağrı veritabanı referansı oluştur
+            const callId = currentUser.uid + "_" + targetUserUid;
+            activeCallRef = ref(rtdb, "calls/" + callId);
+
+            // WebRTC Bağlantısını Kur
+            peerConnection = new RTCPeerConnection(rtcConfig);
+            
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    push(ref(rtdb, `calls/${callId}/senderCandidates`), event.candidate.toJSON());
+                }
+            };
+
+            peerConnection.ontrack = (event) => {
+                document.getElementById("remote-audio").srcObject = event.streams[0];
+            };
+
+            // SDP Teklifi Oluştur (Offer)
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+
+            // Veritabanına Teklifi Gönder
+            await set(activeCallRef, {
+                callerId: currentUser.uid,
+                callerName: currentUser.displayName,
+                receiverId: targetUserUid,
+                offer: { type: offer.type, sdp: offer.sdp },
+                status: "ringing"
+            });
+
+            // Alıcının Yanıtını (Answer) Dinle
+            onValue(ref(rtdb, `calls/${callId}/answer`), async (snapshot) => {
+                const answer = snapshot.val();
+                if (answer && peerConnection.signalingState !== "stable") {
+                    const rtcAnswer = new RTCSessionDescription(answer);
+                    await peerConnection.setRemoteDescription(rtcAnswer);
+                    document.getElementById("active-call-panel").style.display = "flex";
+                }
+            });
+
+            // ICE Adaylarını Al
+            onChildAdded(ref(rtdb, `calls/${callId}/receiverCandidates`), (snapshot) => {
+                const candidate = new RTCIceCandidate(snapshot.val());
+                peerConnection.addIceCandidate(candidate);
+            });
+
+            // Kapatma/Reddedilme Durumu Dinleme
+            onValue(ref(rtdb, `calls/${callId}/status`), (snapshot) => {
+                const status = snapshot.val();
+                if (status === "rejected" || status === "ended") {
+                    window.showToast("Çağrı sonlandırıldı.");
+                    hangUpCall();
+                }
+            });
+        };
+
+        // Gelen Aramaları Dinleme (Alıcı Taraf)
+        function listenForCalls() {
+            onValue(ref(rtdb, "calls"), (snapshot) => {
+                const calls = snapshot.val();
+                if (!calls) return;
+
+                for (let callId in calls) {
+                    const call = calls[callId];
+                    if (call.receiverId === currentUser.uid && call.status === "ringing") {
+                        activeCallRef = ref(rtdb, "calls/" + callId);
+                        document.getElementById("caller-name-info").textContent = `${call.callerName} bağlantı kurmak istiyor...`;
+                        document.getElementById("incoming-call-modal").style.display = "flex";
+                        
+                        // WebRTC hazırlığı yap (Alıcı için)
+                        prepareReceiverRTC(callId, call.offer);
+                        break;
+                    }
+                }
+            });
+        }
+
+        // Alıcı için WebRTC Bağlantısını Hazırlama
+        async function prepareReceiverRTC(callId, offer) {
+            peerConnection = new RTCPeerConnection(rtcConfig);
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    push(ref(rtdb, `calls/${callId}/receiverCandidates`), event.candidate.toJSON());
+                }
+            };
+
+            peerConnection.ontrack = (event) => {
+                document.getElementById("remote-audio").srcObject = event.streams[0];
+            };
+
+            // Uzak SDP Teklifini Set Et
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+
+            // Gönderici ICE adaylarını dinle
+            onChildAdded(ref(rtdb, `calls/${callId}/senderCandidates`), (snapshot) => {
+                const candidate = new RTCIceCandidate(snapshot.val());
+                peerConnection.addIceCandidate(candidate);
+            });
+
+            // Durum Kontrolü
+            onValue(ref(rtdb, `calls/${callId}/status`), (snapshot) => {
+                const status = snapshot.val();
+                if (status === "ended") {
+                    hangUpCall();
+                }
+            });
+        }
+
+        // Arama Kabul Etme (Alıcı Taraf)
+        window.acceptCall = async function() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                document.getElementById("local-audio").srcObject = localStream;
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+            } catch (err) {
+                window.showToast("Mikrofon izni engellendi!", "error");
+                rejectCall();
+                return;
+            }
+
+            // Yanıt SDP oluştur (Answer)
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+
+            // Veritabanına yanıtı yaz
+            await updateDocInRtdb({
+                "status": "connected",
+                "answer": { type: answer.type, sdp: answer.sdp }
+            });
+
+            document.getElementById("incoming-call-modal").style.display = "none";
+            document.getElementById("active-call-panel").style.display = "flex";
+            window.showToast("Güvenli bağlantı kuruldu! 🎙️", "success");
+        };
+
+        // Aramayı Reddetme (Alıcı Taraf)
+        window.rejectCall = async function() {
+            await updateDocInRtdb({ "status": "rejected" });
+            document.getElementById("incoming-call-modal").style.display = "none";
+            cleanupRTC();
+        };
+
+        // Görüşmeyi Kapatma
+        window.hangUpCall = async function() {
+            if (activeCallRef) {
+                await updateDocInRtdb({ "status": "ended" });
+            }
+            cleanupRTC();
+        };
+
+        // WebRTC ve UI Temizliği
+        function cleanupRTC() {
+            document.getElementById("incoming-call-modal").style.display = "none";
+            document.getElementById("active-call-panel").style.display = "none";
+
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            if (activeCallRef) {
+                remove(activeCallRef);
+                activeCallRef = null;
+            }
+        }
+
+        async function updateDocInRtdb(data) {
+            if (activeCallRef) {
+                await set(activeCallRef, data);
+            }
+        }
+
+        // GÖRSEL SIKIŞTIRMA VE SİSTEMİN DİĞER MOTORLARI
         window.previewAndCompressImage = function(event) {
             const file = event.target.files[0];
             if (file) {
@@ -441,7 +680,7 @@
                     const img = new Image();
                     img.onload = function() {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 600; // Sınırları belirledik ki çökmesin
+                        const MAX_WIDTH = 600; 
                         const MAX_HEIGHT = 600;
                         let width = img.width;
                         let height = img.height;
@@ -462,7 +701,6 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
                         
-                        // %60 kalite ile JPEG formatında sıkıştırarak kaydet
                         pendingImageData = canvas.toDataURL('image/jpeg', 0.6);
                         document.getElementById("upload-status").classList.remove("hidden");
                         window.showToast("Görsel sıkıştırıldı ve hazır! 📸", "success");
