@@ -3,56 +3,303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aura Light</title>
+    <title>AURA - Global Social Network</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #090d16;
+        }
+        .glass-card {
+            background: rgba(17, 24, 39, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen p-4">
-    <div class="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-        <h1 class="text-xl font-bold text-purple-400 text-center">⚡ AURA LIGHT</h1>
-        
-        <div id="login-area" class="space-y-3">
-            <input type="text" id="username" placeholder="Kullanıcı Adınız" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none">
-            <button onclick="login()" class="w-full py-2 bg-purple-600 rounded-xl font-bold text-sm">Hızlı Başla</button>
-        </div>
+<body class="text-slate-100 min-h-screen flex flex-col">
 
-        <div id="app-area" class="hidden space-y-4">
-            <div class="space-y-2">
-                <textarea id="post-text" placeholder="Bir şeyler yaz..." class="w-full bg-slate-850 border border-slate-700 rounded-xl p-3 text-sm focus:outline-none" rows="2"></textarea>
-                <button onclick="addPost()" class="w-full py-2 bg-pink-600 rounded-xl font-bold text-xs">Paylaş</button>
+    <header class="glass-card sticky top-0 z-50 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center font-black text-white shadow-lg">
+                A
             </div>
-            <div id="feed" class="space-y-3 pt-3 border-t border-slate-800"></div>
+            <div>
+                <h1 class="text-lg font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">AURA</h1>
+                <span class="text-[9px] uppercase tracking-widest text-slate-500 font-bold block">Global Network</span>
+            </div>
         </div>
+        <div id="user-display" class="hidden flex items-center space-x-3">
+            <span id="user-name-tag" class="text-xs font-bold text-slate-300"></span>
+            <button onclick="logout()" class="text-xs text-rose-500 hover:underline">Çıkış</button>
+        </div>
+    </header>
+
+    <div class="flex-1 max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 lg:p-6">
+        
+        <aside class="lg:col-span-3 space-y-4">
+            <div class="glass-card rounded-2xl p-4 space-y-2">
+                <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2 mb-3">Keşfet</h3>
+                
+                <button onclick="switchTab('feed')" id="btn-tab-feed" class="w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition flex items-center space-x-3 bg-purple-600/10 text-purple-400 border border-purple-500/20">
+                    <span>🌍</span> <span>Global Akış</span>
+                </button>
+
+                <button onclick="switchTab('whisper')" id="btn-tab-whisper" class="w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition flex items-center space-x-3 text-slate-400 hover:bg-slate-900">
+                    <span>🎭</span> <span>Anonim Fısıltılar</span>
+                </button>
+
+                <button onclick="switchTab('chat')" id="btn-tab-chat" class="w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition flex items-center space-x-3 text-slate-400 hover:bg-slate-900">
+                    <span>💬</span> <span>Canlı Sohbet</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="lg:col-span-6 space-y-6">
+
+            <div id="login-section" class="glass-card rounded-2xl p-8 text-center space-y-6 py-12">
+                <span class="text-6xl block">🌌</span>
+                <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Aura Global'e Katıl</h2>
+                <p class="text-slate-400 text-xs max-w-sm mx-auto leading-relaxed">Sınırların ötesinde bir sosyal ağ deneyimi. Google ile giriş yapılamıyorsa misafir olarak anında başla!</p>
+                <div class="space-y-3 max-w-xs mx-auto">
+                    <button onclick="googleLogin()" class="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold text-xs shadow-lg shadow-purple-500/20 hover:opacity-95 transition">Google ile Giriş Yap</button>
+                    <button onclick="guestLogin()" class="w-full py-2.5 bg-slate-900 border border-slate-800 rounded-xl font-bold text-xs hover:bg-slate-800 transition">Ziyaretçi Girişi</button>
+                </div>
+            </div>
+
+            <div id="app-section" class="hidden space-y-6">
+                
+                <div id="view-feed" class="space-y-6">
+                    <div class="glass-card rounded-2xl p-4 space-y-3">
+                        <textarea id="post-input" placeholder="Tüm dünyayla ne paylaşmak istersin?" class="w-full bg-slate-950/50 border border-slate-800 focus:border-purple-500 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none resize-none" rows="2"></textarea>
+                        <div class="flex justify-end">
+                            <button onclick="createPost()" class="px-5 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-xs font-bold transition">Paylaş</button>
+                        </div>
+                    </div>
+                    <div id="feed-container" class="space-y-4"></div>
+                </div>
+
+                <div id="view-whisper" class="hidden space-y-6">
+                    <div class="bg-pink-950/20 border border-pink-500/20 p-4 rounded-xl text-xs text-pink-300">
+                        🤫 Burada paylaştıkların tamamen isimsizdir, profilin asla görünmez.
+                    </div>
+                    <div class="glass-card rounded-2xl p-4 space-y-3">
+                        <textarea id="whisper-input" placeholder="Kimsenin bilmediği bir fısıltı bırak..." class="w-full bg-slate-950/50 border border-slate-800 focus:border-pink-500 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none resize-none" rows="2"></textarea>
+                        <div class="flex justify-end">
+                            <button onclick="createWhisper()" class="px-5 py-2 bg-pink-600 hover:bg-pink-500 rounded-xl text-xs font-bold transition">Fısılda</button>
+                        </div>
+                    </div>
+                    <div id="whisper-container" class="space-y-4"></div>
+                </div>
+
+                <div id="view-chat" class="hidden glass-card rounded-2xl flex flex-col h-[60vh]">
+                    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+                    <form onsubmit="sendChat(event)" class="p-3 border-t border-slate-800 bg-slate-950/20 flex space-x-2">
+                        <input type="text" id="chat-input" placeholder="Mesajınızı yazın..." class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-xs focus:outline-none focus:border-purple-500">
+                        <button type="submit" class="px-4 py-2 bg-purple-600 rounded-lg text-xs font-bold">Gönder</button>
+                    </form>
+                </div>
+
+            </div>
+        </main>
+
+        <aside class="lg:col-span-3 space-y-4">
+            <div class="glass-card rounded-2xl p-4">
+                <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">🔥 Trendler</h3>
+                <div class="space-y-3 text-xs">
+                    <div class="hover:bg-slate-900 p-2 rounded-lg cursor-pointer transition">
+                        <span class="text-purple-400 font-bold block">#AuraGlobal</span>
+                        <span class="text-[10px] text-slate-500">2.4k paylaşım</span>
+                    </div>
+                    <div class="hover:bg-slate-900 p-2 rounded-lg cursor-pointer transition">
+                        <span class="text-purple-400 font-bold block">#YazılımDünyası</span>
+                        <span class="text-[10px] text-slate-500">1.1k paylaşım</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
     </div>
 
-    <script>
-        let user = null;
-        let posts = [];
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        function login() {
-            const name = document.getElementById("username").value.trim();
-            if(!name) return;
-            user = name;
-            document.getElementById("login-area").classList.add("hidden");
-            document.getElementById("app-area").classList.remove("hidden");
-            render();
+        const firebaseConfig = {
+            apiKey: "AIzaSyBp-FSOxxPBtvyOCLDXMz5G8OsdEhjx5uk",
+            authDomain: "signub-c831e.firebaseapp.com",
+            projectId: "signub-c831e",
+            storageBucket: "signub-c831e.firebasestorage.app",
+            messagingSenderId: "1062016988286",
+            appId: "1:1062016988286:web:ae1f4543fb1b751b16142f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null;
+
+        // Login Fonksiyonları
+        window.googleLogin = function() {
+            signInWithPopup(auth, provider).catch(err => {
+                alert("Google girişi yapılamadı, yerel güvenli sunucuda olmanız gerekir. Ziyaretçi Girişi yapabilirsiniz.");
+            });
+        };
+
+        window.guestLogin = function() {
+            currentUser = {
+                uid: "guest_" + Date.now(),
+                displayName: "Ziyaretçi_" + Math.floor(Math.random() * 100),
+                photoURL: "https://i.pravatar.cc/100?img=12"
+            };
+            onLoginSuccess();
+        };
+
+        window.logout = function() {
+            signOut(auth).then(() => {
+                currentUser = null;
+                document.getElementById("login-section").classList.remove("hidden");
+                document.getElementById("app-section").classList.add("hidden");
+                document.getElementById("user-display").classList.add("hidden");
+            });
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                onLoginSuccess();
+            }
+        });
+
+        function onLoginSuccess() {
+            document.getElementById("login-section").classList.add("hidden");
+            document.getElementById("app-section").classList.remove("hidden");
+            document.getElementById("user-display").classList.remove("hidden");
+            document.getElementById("user-name-tag").textContent = currentUser.displayName;
+            
+            // Dinleyicileri Başlat
+            listenFeed();
+            listenWhisper();
+            listenChat();
         }
 
-        function addPost() {
-            const txt = document.getElementById("post-text").value.trim();
-            if(!txt) return;
-            posts.unshift({ user: user, content: txt });
-            document.getElementById("post-text").value = "";
-            render();
+        // --- TAB GEÇİŞLERİ ---
+        window.switchTab = function(tab) {
+            ["feed", "whisper", "chat"].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add("hidden");
+                document.getElementById(`btn-tab-${t}`).className = "w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition flex items-center space-x-3 text-slate-400 hover:bg-slate-900";
+            });
+            document.getElementById(`view-${tab}`).classList.remove("hidden");
+            document.getElementById(`btn-tab-${tab}`).className = "w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition flex items-center space-x-3 bg-purple-600/10 text-purple-400 border border-purple-500/20";
+        };
+
+        // --- POST OLUŞTURMA & DİNLEME ---
+        window.createPost = async function() {
+            const input = document.getElementById("post-input");
+            const text = input.value.trim();
+            if (!text) return;
+
+            await addDoc(collection(db, "aura_posts"), {
+                uid: currentUser.uid,
+                userName: currentUser.displayName,
+                userPhoto: currentUser.photoURL,
+                content: text,
+                createdAt: serverTimestamp()
+            });
+            input.value = "";
+        };
+
+        function listenFeed() {
+            const q = query(collection(db, "aura_posts"), orderBy("createdAt", "desc"), limit(50));
+            onSnapshot(q, (snapshot) => {
+                const container = document.getElementById("feed-container");
+                container.innerHTML = "";
+                snapshot.forEach(doc => {
+                    const post = doc.data();
+                    const el = document.createElement("div");
+                    el.className = "glass-card rounded-2xl p-4 space-y-2";
+                    el.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <img src="${post.userPhoto}" class="w-8 h-8 rounded-full border border-slate-700">
+                            <span class="font-bold text-xs text-slate-300">${post.userName}</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed break-all">${post.content}</p>
+                    `;
+                    container.appendChild(el);
+                });
+            });
         }
 
-        function render() {
-            const f = document.getElementById("feed");
-            f.innerHTML = "";
-            posts.forEach(p => {
-                const el = document.createElement("div");
-                el.className = "p-3 bg-slate-800 rounded-xl border border-slate-700";
-                el.innerHTML = `<span class="font-bold text-xs text-purple-400 block">${p.user}</span><p class="text-sm text-slate-300 mt-1">${p.content}</p>`;
-                f.appendChild(el);
+        // --- FISILTI OLUŞTURMA & DİNLEME ---
+        window.createWhisper = async function() {
+            const input = document.getElementById("whisper-input");
+            const text = input.value.trim();
+            if (!text) return;
+
+            await addDoc(collection(db, "aura_whispers"), {
+                content: text,
+                createdAt: serverTimestamp()
+            });
+            input.value = "";
+        };
+
+        function listenWhisper() {
+            const q = query(collection(db, "aura_whispers"), orderBy("createdAt", "desc"), limit(50));
+            onSnapshot(q, (snapshot) => {
+                const container = document.getElementById("whisper-container");
+                container.innerHTML = "";
+                snapshot.forEach(doc => {
+                    const wh = doc.data();
+                    const el = document.createElement("div");
+                    el.className = "bg-slate-900/50 border border-slate-800 p-3 rounded-xl";
+                    el.innerHTML = `
+                        <p class="text-xs text-pink-200/90 leading-relaxed italic">" ${wh.content} "</p>
+                        <span class="text-[9px] text-slate-600 block mt-1.5">🤫 Anonim Fısıltı</span>
+                    `;
+                    container.appendChild(el);
+                });
+            });
+        }
+
+        // --- CANLI CHAT ---
+        window.sendChat = async function(e) {
+            e.preventDefault();
+            const input = document.getElementById("chat-input");
+            const text = input.value.trim();
+            if (!text) return;
+
+            await addDoc(collection(db, "aura_chats"), {
+                uid: currentUser.uid,
+                userName: currentUser.displayName,
+                userPhoto: currentUser.photoURL,
+                message: text,
+                createdAt: serverTimestamp()
+            });
+            input.value = "";
+        };
+
+        function listenChat() {
+            const q = query(collection(db, "aura_chats"), orderBy("createdAt", "asc"), limit(60));
+            onSnapshot(q, (snapshot) => {
+                const container = document.getElementById("chat-container");
+                container.innerHTML = "";
+                snapshot.forEach(doc => {
+                    const msg = doc.data();
+                    const isMe = msg.uid === currentUser.uid;
+                    const el = document.createElement("div");
+                    el.className = `flex ${isMe ? 'justify-end' : 'justify-start'}`;
+                    el.innerHTML = `
+                        <div class="max-w-[80%] p-2.5 rounded-xl text-xs ${isMe ? 'bg-purple-600' : 'bg-slate-800'}">
+                            <span class="font-bold text-[9px] block text-slate-300 opacity-80">${msg.userName}</span>
+                            <p class="mt-0.5 break-all">${msg.message}</p>
+                        </div>
+                    `;
+                    container.appendChild(el);
+                });
+                container.scrollTop = container.scrollHeight;
             });
         }
     </script>
