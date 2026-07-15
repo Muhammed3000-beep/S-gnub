@@ -3,184 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kozmik Fısıltı & Skor Paneli</title>
+    <title>Kozmik Fısıltı - Sosyal Medya Paneli</title>
     <style>
         :root {
-            --bg-color: #0b0b0e;
-            --card-bg: #121216;
+            --bg-color: #08080a;
+            --card-bg: #111115;
             --text-color: #e1e1e6;
-            --primary-color: #9466ff;
+            --primary: #9466ff;
             --primary-hover: #ac85ff;
-            --accent-color: #00e676;
-            --border-color: #202024;
+            --accent: #00e676;
+            --border: #1f1f23;
             --text-muted: #7c7c8a;
-            --gold: #ffd700;
+            --danger: #ff5555;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
+            padding: 24px;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
         }
 
-        .grid-layout {
+        .app-layout {
             display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 20px;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
             width: 100%;
-            max-width: 1100px;
+            max-width: 1200px;
         }
 
-        /* Kart Yapısı */
+        /* Ortak Kart Tasarımı */
         .card {
             background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         }
 
         /* Profil Kartı */
-        .profile-card {
+        .profile-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             text-align: center;
         }
 
-        .profile-img {
-            width: 80px;
-            height: 80px;
+        .avatar {
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
-            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
-            margin: 0 auto 10px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            box-shadow: 0 0 15px rgba(148, 102, 255, 0.3);
         }
 
-        .profile-name {
-            font-weight: bold;
-            font-size: 1.1rem;
-            margin-bottom: 5px;
+        .username {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 0;
         }
 
-        .badges {
+        .handle {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin: 4px 0 12px 0;
+        }
+
+        .badge-list {
             display: flex;
-            justify-content: center;
             gap: 8px;
-            margin-top: 10px;
             flex-wrap: wrap;
+            justify-content: center;
         }
 
-        .badge {
-            background-color: #202024;
-            padding: 4px 8px;
+        .badge-item {
+            background-color: #1a1a21;
+            border: 1px solid var(--border);
+            padding: 6px 12px;
             border-radius: 20px;
             font-size: 0.75rem;
             display: flex;
             align-items: center;
-            gap: 4px;
-            border: 1px solid #29292e;
+            gap: 6px;
         }
 
-        /* Başlıklar */
-        .section-title {
-            font-size: 0.9rem;
+        /* Trend Etiketleri */
+        .sidebar-title {
+            font-size: 0.85rem;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 12px;
-            font-weight: bold;
+            letter-spacing: 1.5px;
+            margin-bottom: 16px;
+            font-weight: 800;
         }
 
-        /* Trend Etiketler */
-        .tags-container {
+        .tags-list {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
         }
 
-        .tag {
-            background: #1c1c22;
+        .tag-pill {
+            background: #15151c;
             color: var(--text-color);
-            padding: 6px 12px;
-            border-radius: 20px;
+            padding: 8px 14px;
+            border-radius: 30px;
             font-size: 0.85rem;
             cursor: pointer;
-            border: 1px solid var(--border-color);
-            transition: all 0.2s;
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
         }
 
-        .tag:hover {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
+        .tag-pill:hover, .tag-pill.active {
+            border-color: var(--primary);
+            background: rgba(148, 102, 255, 0.1);
+            color: var(--primary);
         }
 
         /* Liderlik Tablosu */
-        .leaderboard {
-            background-color: #0b0b0e;
-            border-radius: 8px;
-            padding: 10px;
-            border: 1px solid var(--border-color);
+        .leaderboard-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
-        .leaderboard-row {
-            display: grid;
-            grid-template-columns: 40px 1fr 60px;
-            padding: 8px 5px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            font-size: 0.9rem;
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #1a1a21;
         }
 
-        .leaderboard-row:last-child {
+        .leaderboard-item:last-child {
             border-bottom: none;
         }
 
-        /* Sağ/Orta Panel */
-        .main-content {
+        .rank-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .rank-num {
+            font-weight: bold;
+            width: 20px;
+        }
+
+        .score-val {
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        /* Sağ Akış Alanı */
+        .feed-container {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 24px;
         }
 
         /* Günün Modu */
-        .mode-section {
-            background: linear-gradient(135deg, #16161c, #121216);
-        }
-
-        .mode-buttons {
-            display: flex;
+        .mood-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
             gap: 10px;
-            flex-wrap: wrap;
         }
 
-        .mode-btn {
-            background: #202024;
-            border: 1px solid var(--border-color);
-            padding: 10px 15px;
-            border-radius: 8px;
+        .mood-button {
+            background: #15151c;
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            text-align: center;
             transition: all 0.2s;
             color: var(--text-color);
+            font-size: 0.9rem;
         }
 
-        .mode-btn:hover {
+        .mood-button:hover {
+            border-color: var(--primary);
             transform: translateY(-2px);
-            border-color: var(--primary-color);
         }
 
-        /* Fısıltı Kutusu */
-        .whisper-box {
+        /* Post Gönderim Kutusu */
+        .post-box {
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -188,220 +203,320 @@
 
         textarea {
             width: 100%;
-            height: 80px;
-            background: #0b0b0e;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
+            height: 90px;
+            background: #08080a;
+            border: 1px solid var(--border);
+            border-radius: 12px;
             color: #fff;
-            padding: 12px;
+            padding: 16px;
             box-sizing: border-box;
             resize: none;
-            font-size: 0.95rem;
+            font-size: 1rem;
             font-family: inherit;
+            transition: border-color 0.2s;
         }
 
         textarea:focus {
             outline: none;
-            border-color: var(--primary-color);
+            border-color: var(--primary);
         }
 
-        .action-bar {
+        .button-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .random-btn {
-            background: transparent;
-            border: 1px solid var(--primary-color);
-            color: var(--primary-color);
-            padding: 8px 12px;
-            border-radius: 6px;
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 700;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 6px;
             transition: all 0.2s;
+            font-size: 0.9rem;
         }
 
-        .random-btn:hover {
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
             background: rgba(148, 102, 255, 0.1);
         }
 
-        .send-btn {
-            background: var(--primary-color);
-            color: #fff;
+        .btn-primary {
+            background: var(--primary);
             border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.9rem;
-            transition: background 0.2s;
+            color: #fff;
         }
 
-        .send-btn:hover {
+        .btn-primary:hover {
             background: var(--primary-hover);
         }
 
-        /* Fısıltı Akışı */
-        .whisper-list {
+        /* Akış */
+        .post-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 16px;
         }
 
-        .whisper-item {
-            background: #121216;
-            border: 1px solid var(--border-color);
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            line-height: 1.4;
-            animation: slideDown 0.3s ease;
+        .post-card {
+            background: #13131a;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            animation: postAppear 0.3s ease;
         }
 
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
+        @keyframes postAppear {
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .post-body {
+            font-size: 1rem;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .delete-post {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .empty-feed {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 40px;
         }
     </style>
 </head>
 <body>
 
-<div class="grid-layout">
+<div class="app-layout">
     
-    <div style="display: flex; flex-direction: column; gap: 20px;">
+    <div style="display: flex; flex-direction: column; gap: 24px;">
         
-        <div class="card profile-card">
-            <div class="profile-img">🛸</div>
-            <div class="profile-name">Kozmik Gezgin</div>
-            <div style="font-size: 0.8rem; color: var(--text-muted);">@gezgin101</div>
-            
-            <div class="badges">
-                <div class="badge">💨 Yeni Fısıldayan</div>
-                <div class="badge">👑 Lider</div>
+        <div class="card profile-container">
+            <div class="avatar">🛸</div>
+            <h3 class="username">Kozmik Gezgin</h3>
+            <p class="handle">@gezgin101</p>
+            <div class="badge-list">
+                <span class="badge-item">💨 Yeni Fısıldayan</span>
+                <span class="badge-item">👑 Lider</span>
             </div>
         </div>
 
         <div class="card">
-            <div class="section-title">Trend Etiketler</div>
-            <div class="tags-container">
-                <span class="tag" onclick="insertTag('#YKS2026')">#YKS2026</span>
-                <span class="tag" onclick="insertTag('#KahveMolası')">#KahveMolası</span>
-                <span class="tag" onclick="insertTag('#GececilereSelam')">#GececilereSelam</span>
+            <div class="sidebar-title">Trend Etiketler</div>
+            <div class="tags-list" id="tagList">
+                <span class="tag-pill" onclick="toggleTagFilter('#YKS2026')">#YKS2026</span>
+                <span class="tag-pill" onclick="toggleTagFilter('#KahveMolası')">#KahveMolası</span>
+                <span class="tag-pill" onclick="toggleTagFilter('#GececilereSelam')">#GececilereSelam</span>
+                <span class="tag-pill" onclick="toggleTagFilter('#SınavHaftası')">#SınavHaftası</span>
             </div>
         </div>
 
         <div class="card">
-            <div class="section-title">🏆 Haftalık Liderler</div>
-            <div class="leaderboard">
-                <div class="leaderboard-row" style="font-weight: bold; color: var(--text-muted);">
-                    <div>Sıra</div>
-                    <div>Oyuncu</div>
-                    <div>Skor</div>
+            <div class="sidebar-title">🏆 Haftalık Liderler</div>
+            <div class="leaderboard-list">
+                <div class="leaderboard-item">
+                    <div class="rank-info">
+                        <span class="rank-num">🥇</span>
+                        <span>@ay_tozu</span>
+                    </div>
+                    <span class="score-val">1040 p</span>
                 </div>
-                <div class="leaderboard-row">
-                    <div style="color: var(--gold);">🥇</div>
-                    <div>@ay_tozu</div>
-                    <div style="color: var(--accent-color); font-weight: bold;">940</div>
+                <div class="leaderboard-item">
+                    <div class="rank-info">
+                        <span class="rank-num">🥈</span>
+                        <span>@gezgin101</span>
+                    </div>
+                    <span class="score-val" id="myScoreDisplay">820 p</span>
                 </div>
-                <div class="leaderboard-row">
-                    <div style="color: #c0c0c0;">🥈</div>
-                    <div>@gezgin101</div>
-                    <div style="color: var(--accent-color); font-weight: bold;">820</div>
-                </div>
-                <div class="leaderboard-row">
-                    <div style="color: #cd7f32;">🥉</div>
-                    <div>@nebula_x</div>
-                    <div style="color: var(--accent-color); font-weight: bold;">710</div>
+                <div class="leaderboard-item">
+                    <div class="rank-info">
+                        <span class="rank-num">🥉</span>
+                        <span>@nebula_x</span>
+                    </div>
+                    <span class="score-val">710 p</span>
                 </div>
             </div>
         </div>
+
     </div>
 
-    <div class="main-content">
+    <div class="feed-container">
         
-        <div class="card mode-section">
-            <div class="section-title" style="color: #fff;">Bugün Nasıl Hissediyorsun?</div>
-            <div class="mode-buttons">
-                <button class="mode-btn" onclick="selectMood('😎 (Harika)')">😎 Harika</button>
-                <button class="mode-btn" onclick="selectMood('😴 (Uykulu)')">😴 Uykulu</button>
-                <button class="mode-btn" onclick="selectMood('📚 (Ders Çalışıyor)')">📚 Çalışıyor</button>
-                <button class="mode-btn" onclick="selectMood('🍕 (Aç)')">🍕 Aç</button>
-                <button class="mode-btn" onclick="selectMood('🤯 (Sınav Haftası)')">🤯 Sınavda</button>
+        <div class="card">
+            <div class="sidebar-title" style="color: #fff;">Bugün Nasıl Hissediyorsun?</div>
+            <div class="mood-grid">
+                <button class="mood-button" onclick="setMood('😎', 'Harika')">😎 Harika</button>
+                <button class="mood-button" onclick="setMood('😴', 'Uykulu')">😴 Uykulu</button>
+                <button class="mood-button" onclick="setMood('📚', 'Çalışıyor')">📚 Çalışıyor</button>
+                <button class="mood-button" onclick="setMood('🍕', 'Aç')">🍕 Aç</button>
+                <button class="mood-button" onclick="setMood('🤯', 'Sınavda')">🤯 Sınavda</button>
             </div>
         </div>
 
-        <div class="card whisper-box">
-            <textarea id="whisperText" placeholder="İçinden geçenleri evrene fısılda..."></textarea>
-            <div class="action-bar">
-                <button class="random-btn" onclick="generateRandomWhisper()">🎲 Rastgele Şans</button>
-                <button class="send-btn" onclick="publishWhisper()">Fısılda</button>
+        <div class="card post-box">
+            <textarea id="postInput" placeholder="Evrene yeni bir fısıltı gönder..."></textarea>
+            <div class="button-bar">
+                <button class="btn btn-outline" onclick="generateRandomTemplate()">🎲 Şanslı Fısıltı</button>
+                <button class="btn btn-primary" onclick="createPost()">Fısılda</button>
             </div>
         </div>
 
         <div class="card">
-            <div class="section-title" style="color: #fff; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Uzay Boşluğundaki Fısıltılar</div>
-            <div class="whisper-list" id="whisperFeed">
-                <div class="whisper-item">
-                    <strong>@gezgin101:</strong> Dershanem şu an 📚 (Ders Çalışıyor) modunda! #YKS2026
+            <div class="sidebar-title" id="feedTitle" style="color: #fff; margin-bottom: 20px;">Fısıltı Akışı</div>
+            <div class="post-list" id="postFeed">
                 </div>
-                <div class="whisper-item">
-                    <strong>@ay_tozu:</strong> Gece ders çalışırken kahve içmeyi unutanlar kulübü kuruyorum... ☕ #GececilereSelam
-                </div>
-            </div>
         </div>
 
     </div>
 </div>
 
 <script>
-    const whisperText = document.getElementById('whisperText');
-    const whisperFeed = document.getElementById('whisperFeed');
-
-    // 1. Günün Modunu Seçme
-    function selectMood(mood) {
-        whisperText.value = `Dershanem şu an ${mood} modunda! `;
-        whisperText.focus();
-    }
-
-    // 2. Trend Etiket Ekleme
-    function insertTag(tag) {
-        whisperText.value += ` ${tag}`;
-        whisperText.focus();
-    }
-
-    // 3. Rastgele Fısıltı Üretici (Zar)
-    const templates = [
-        "Şu an arka planda çalan şarkı: ______ 🎵",
-        "Günün en zor dersi kesinlikle ______ idi. 🤯",
-        "Biri bana acilen kahve ısmarlasın! ☕",
-        "Bugün her şeyi halledecek o motivasyon geldi! 💪"
+    // Gerçek veri yapısı ve LocalStorage Yönetimi
+    let posts = JSON.parse(localStorage.getItem('social_posts')) || [
+        { id: 1, author: '@ay_tozu', content: 'Gece ders çalışırken kahve içmeyi unutanlar kulübü kuruyorum... ☕ #GececilereSelam', time: '10dk önce' },
+        { id: 2, author: '@nebula_x', content: 'Şu an kütüphanedeyim, ortam tam #YKS2026 tayfa dolu. Başarılar herkese!', time: '1sa önce' }
     ];
 
-    function generateRandomWhisper() {
-        const randomIndex = Math.floor(Math.random() * templates.length);
-        whisperText.value = templates[randomIndex];
-        whisperText.focus();
+    let userScore = parseInt(localStorage.getItem('user_score')) || 820;
+    let activeFilter = null;
+
+    // Başlangıç Kurulumları
+    document.addEventListener('DOMContentLoaded', () => {
+        renderPosts();
+        updateScoreDisplay();
+    });
+
+    // 1. Günün Modunu Inputa Ekleme
+    function setMood(emoji, label) {
+        const input = document.getElementById('postInput');
+        input.value = `Dershanem şu an ${emoji} (${label}) modunda! `;
+        input.focus();
     }
 
-    // 4. Fısıltıyı Gönderme
-    function publishWhisper() {
-        const content = whisperText.value.trim();
+    // 2. Şanslı Fısıltı (Zar Butonu)
+    const randomTemplates = [
+        "Şu an arka planda çalan o efsane şarkı: ______ 🎵",
+        "Günün en zor dersi kesinlikle ______ idi. 🤯",
+        "Biri bana acilen kahve ısmarlasın yoksa uyuyakalacağım! ☕",
+        "Bugün her şeyi halledecek o motivasyon kartı sonunda çekildi! 💪"
+    ];
+
+    function generateRandomTemplate() {
+        const input = document.getElementById('postInput');
+        const randomIndex = Math.floor(Math.random() * randomTemplates.length);
+        input.value = randomTemplates[randomIndex];
+        input.focus();
+    }
+
+    // 3. Etiket Filtreleme (Arama Çubuğu Olmadan!)
+    function toggleTagFilter(tag) {
+        const tagElements = document.querySelectorAll('.tag-pill');
+        
+        if (activeFilter === tag) {
+            activeFilter = null;
+            document.getElementById('feedTitle').innerText = "Fısıltı Akışı";
+            tagElements.forEach(el => el.classList.remove('active'));
+        } else {
+            activeFilter = tag;
+            document.getElementById('feedTitle').innerText = `Fısıltı Akışı (${tag})`;
+            tagElements.forEach(el => {
+                if (el.innerText === tag) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+        }
+        renderPosts();
+    }
+
+    // 4. Yeni Fısıltı Gönderme ve Skor Kazanma
+    function createPost() {
+        const input = document.getElementById('postInput');
+        const content = input.value.trim();
+
         if (content === "") {
-            alert("Boş fısıltı gönderilemez!");
+            alert("Lütfen fısıldamak için bir şeyler yazın!");
             return;
         }
 
-        const newItem = document.createElement('div');
-        newItem.className = 'whisper-item';
-        newItem.innerHTML = `<strong>@gezgin101:</strong> ${content}`;
+        const newPost = {
+            id: Date.now(),
+            author: '@gezgin101',
+            content: content,
+            time: 'Şimdi'
+        };
 
-        whisperFeed.insertBefore(newItem, whisperFeed.firstChild);
-        whisperText.value = "";
+        posts.unshift(newPost);
+        localStorage.setItem('social_posts', JSON.stringify(posts));
+
+        // Sosyal medya oyunlaştırması: Her fısıltıda puan kazan
+        userScore += 10;
+        localStorage.setItem('user_score', userScore);
+        updateScoreDisplay();
+
+        input.value = "";
+        renderPosts();
+    }
+
+    // 5. Post Silme
+    function deletePost(id) {
+        posts = posts.filter(post => post.id !== id);
+        localStorage.setItem('social_posts', JSON.stringify(posts));
+        renderPosts();
+    }
+
+    // 6. Arayüzü Güncelleme (Rendering)
+    function renderPosts() {
+        const feed = document.getElementById('postFeed');
+        feed.innerHTML = '';
+
+        const filteredPosts = activeFilter 
+            ? posts.filter(post => post.content.includes(activeFilter))
+            : posts;
+
+        if (filteredPosts.length === 0) {
+            feed.innerHTML = `<div class="empty-feed">Bu etikette fısıldanmış hiçbir şey yok. İlk sen yaz!</div>`;
+            return;
+        }
+
+        filteredPosts.forEach(post => {
+            const isMe = post.author === '@gezgin101';
+            const deleteBtn = isMe ? `<button class="delete-post" onclick="deletePost(${post.id})">Sil</button>` : '';
+
+            const card = document.createElement('div');
+            card.className = 'post-card';
+            card.innerHTML = `
+                <div class="post-header">
+                    <span><strong>${post.author}</strong> • ${post.time}</span>
+                    ${deleteBtn}
+                </div>
+                <div class="post-body">${post.content}</div>
+            `;
+            feed.appendChild(card);
+        });
+    }
+
+    function updateScoreDisplay() {
+        document.getElementById('myScoreDisplay').innerText = `${userScore} p`;
     }
 </script>
 
