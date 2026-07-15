@@ -11,7 +11,6 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: #03050a;
             overflow-x: hidden;
-            /* Metin seçimini engelle (Uygulama hissi verir) */
             user-select: none; 
             -webkit-user-select: none;
         }
@@ -30,7 +29,6 @@
             background: #1e293b;
             border-radius: 99px;
         }
-        /* Dosya yükleme inputunu gizle */
         input[type="file"] {
             display: none;
         }
@@ -97,9 +95,18 @@
                 <button onclick="toggleProfileModal(true)" class="w-full py-1.5 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl text-[10px] font-bold text-slate-300 transition">Profili Düzenle ⚙️</button>
             </div>
 
+            <div class="glass-card rounded-2xl p-4 space-y-3 border border-fuchsia-500/20">
+                <h3 class="text-[10px] font-black text-fuchsia-400 uppercase tracking-widest">📡 E-POSTA İLE BUL</h3>
+                <div class="flex space-x-2">
+                    <input type="email" id="email-search-input" placeholder="Kullanıcı e-postası..." class="w-full bg-slate-950 border border-slate-800 focus:border-fuchsia-500 rounded-xl px-3 py-2 text-[11px] text-slate-100 placeholder-slate-500 focus:outline-none transition">
+                    <button onclick="searchUserByEmail()" class="bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-3 py-2 rounded-xl text-[10px] font-bold transition">Ara</button>
+                </div>
+                <div id="email-search-result" class="mt-2 empty:hidden"></div>
+            </div>
+
             <div class="glass-card rounded-2xl p-4 space-y-3 border border-cyan-500/10">
-                <h3 class="text-[10px] font-black text-cyan-400 uppercase tracking-widest">🔍 KOZMİK ARAMA</h3>
-                <input type="text" id="search-input" oninput="searchNetwork()" placeholder="Kullanıcı adı veya kelime ara..." class="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none transition">
+                <h3 class="text-[10px] font-black text-cyan-400 uppercase tracking-widest">🔍 İÇERİK FİLTRESİ</h3>
+                <input type="text" id="search-input" oninput="searchNetwork()" placeholder="Akışta kelime ara..." class="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none transition">
             </div>
 
             <div class="glass-card rounded-2xl p-4 space-y-2">
@@ -139,9 +146,9 @@
                             <label class="cursor-pointer flex items-center space-x-2 text-cyan-400 hover:text-cyan-300 transition px-3 py-1.5 bg-cyan-950/40 rounded-lg border border-cyan-500/20">
                                 <span class="text-lg font-black">+</span>
                                 <span class="text-[10px] font-bold">Fotoğraf Ekle</span>
-                                <input type="file" id="post-image-upload" accept="image/*" onchange="previewImage(event)">
+                                <input type="file" id="post-image-upload" accept="image/*" onchange="previewAndCompressImage(event)">
                             </label>
-                            <span id="upload-status" class="text-[9px] text-emerald-400 font-bold hidden">Görsel hazır ✅</span>
+                            <span id="upload-status" class="text-[9px] text-emerald-400 font-bold hidden">Görsel optimize edildi ✅</span>
                             <button onclick="createPost()" class="px-5 py-2 bg-gradient-to-r from-violet-600 to-cyan-500 rounded-xl text-xs font-bold text-white shadow">Payload Gönder 🚀</button>
                         </div>
                     </div>
@@ -208,19 +215,18 @@
     </div>
 
     <script>
-        // GÜVENLİK KALKANI: F12 ve Sağ Tık Engelleme
         document.addEventListener('contextmenu', event => event.preventDefault());
         document.onkeydown = function(e) {
-            if(e.keyCode == 123) return false; // F12
-            if(e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) return false; // Ctrl+Shift+I / J
-            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; // Ctrl+U
+            if(e.keyCode == 123) return false; 
+            if(e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) return false; 
+            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; 
         }
     </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, updateDoc, increment, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, updateDoc, increment, deleteDoc, arrayUnion, where, getDocs } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
         import { getDatabase, ref, push, set, onChildAdded } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -242,7 +248,7 @@
         let selectedColor = "#ef4444";
         let userCustomAvatar = "";
         let userCustomBio = "";
-        let pendingImageData = null; // Yüklenecek fotoğraf için
+        let pendingImageData = null; 
 
         const canvas = document.getElementById("real-canvas");
         const ctx = canvas.getContext("2d");
@@ -260,37 +266,12 @@
             const y = e.clientY - rect.top;
             const gridX = Math.floor(x / (rect.width / 16)) * pixelSize;
             const gridY = Math.floor(y / (rect.height / 16)) * pixelSize;
-
             ctx.fillStyle = selectedColor;
             ctx.fillRect(gridX, gridY, pixelSize, pixelSize);
         });
 
-        window.setCurrentColor = function(color) {
-            selectedColor = color;
-        };
-
-        window.clearBoard = function() {
-            initCanvas();
-        };
-
-        window.shareCanvasAsImage = async function() {
-            try {
-                const imageUrl = canvas.toDataURL("image/png");
-                await addDoc(collection(db, "aura_ultra_posts"), {
-                    uid: currentUser.uid,
-                    userName: currentUser.displayName,
-                    userPhoto: userCustomAvatar || currentUser.photoURL,
-                    content: "🎨 Tuvalimde yepyeni bir şaheser tasarladım!",
-                    sharedImage: imageUrl,
-                    replies: [],
-                    createdAt: serverTimestamp()
-                });
-                window.showToast("Görsel akışta başarıyla yayınlandı!", "success");
-                window.switchTab('feed');
-            } catch (err) {
-                window.showToast("Görsel paylaşımında hata oluştu.", "error");
-            }
-        };
+        window.setCurrentColor = function(color) { selectedColor = color; };
+        window.clearBoard = function() { initCanvas(); };
 
         window.showToast = function(message, type = "info") {
             const container = document.getElementById("toast-container");
@@ -339,11 +320,14 @@
                     const userData = userDocSnap.data();
                     userCustomAvatar = userData.userPhoto || user.photoURL;
                     userCustomBio = userData.bio || "Henüz bir kozmik biyografi eklenmedi.";
+                    // E-postayı her ihtimale karşı güncelliyoruz (Arama için)
+                    await setDoc(userDocRef, { email: user.email }, { merge: true });
                 } else {
                     userCustomAvatar = user.photoURL;
                     userCustomBio = "Henüz bir kozmik biyografi eklenmedi.";
                     await setDoc(userDocRef, {
                         userName: user.displayName,
+                        email: user.email,
                         userPhoto: user.photoURL,
                         bio: userCustomBio
                     }, { merge: true });
@@ -411,15 +395,79 @@
             document.getElementById(`btn-tab-${tab}`).className = "w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 text-violet-400 border border-violet-500/20";
         };
 
-        // FOTOĞRAF ÖNİZLEME VE BASE64'E ÇEVİRME
-        window.previewImage = function(event) {
+        // YENİ: E-POSTA İLE ARAMA FONKSİYONU
+        window.searchUserByEmail = async function() {
+            const email = document.getElementById("email-search-input").value.trim().toLowerCase();
+            const resContainer = document.getElementById("email-search-result");
+            if(!email) return;
+            
+            resContainer.innerHTML = `<span class="text-[10px] text-slate-400">Aranıyor...</span>`;
+            
+            try {
+                const q = query(collection(db, "aura_users"), where("email", "==", email));
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    resContainer.innerHTML = `<span class="text-rose-400 text-[10px] font-bold">Kullanıcı bulunamadı.</span>`;
+                } else {
+                    resContainer.innerHTML = "";
+                    querySnapshot.forEach((docSnap) => {
+                        const u = docSnap.data();
+                        resContainer.innerHTML += `
+                            <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 mt-2">
+                                <div class="flex items-center space-x-3">
+                                    <img src="${u.userPhoto}" class="w-8 h-8 rounded-full border border-slate-700">
+                                    <div class="flex flex-col">
+                                        <span class="text-[11px] font-bold text-slate-200">${u.userName}</span>
+                                        <span class="text-[9px] text-slate-400">${u.email}</span>
+                                    </div>
+                                </div>
+                                <span class="text-[9px] bg-emerald-900/50 text-emerald-400 px-2 py-1 rounded font-bold">Bulundu</span>
+                            </div>
+                        `;
+                    });
+                }
+            } catch (error) {
+                resContainer.innerHTML = `<span class="text-rose-400 text-[10px]">Arama hatası oluştu.</span>`;
+            }
+        };
+
+        // GÜÇLÜ SIKIŞTIRMA MOTORU (Büyük fotoğrafları veritabanına uydurur)
+        window.previewAndCompressImage = function(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    pendingImageData = e.target.result;
-                    document.getElementById("upload-status").classList.remove("hidden");
-                    window.showToast("Görsel gönderilmeye hazır!");
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 600; // Sınırları belirledik ki çökmesin
+                        const MAX_HEIGHT = 600;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // %60 kalite ile JPEG formatında sıkıştırarak kaydet
+                        pendingImageData = canvas.toDataURL('image/jpeg', 0.6);
+                        document.getElementById("upload-status").classList.remove("hidden");
+                        window.showToast("Görsel sıkıştırıldı ve hazır! 📸", "success");
+                    }
+                    img.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
             }
@@ -429,21 +477,25 @@
             const val = document.getElementById("post-input").value.trim();
             if(!val && !pendingImageData) return;
 
-            await addDoc(collection(db, "aura_ultra_posts"), {
-                uid: currentUser.uid,
-                userName: currentUser.displayName,
-                userPhoto: userCustomAvatar || currentUser.photoURL,
-                content: val,
-                sharedImage: pendingImageData || null,
-                replies: [], 
-                createdAt: serverTimestamp()
-            });
-            
-            document.getElementById("post-input").value = "";
-            document.getElementById("post-image-upload").value = "";
-            document.getElementById("upload-status").classList.add("hidden");
-            pendingImageData = null;
-            window.showToast("Gönderi akışa fırlatıldı!");
+            try {
+                await addDoc(collection(db, "aura_ultra_posts"), {
+                    uid: currentUser.uid,
+                    userName: currentUser.displayName,
+                    userPhoto: userCustomAvatar || currentUser.photoURL,
+                    content: val,
+                    sharedImage: pendingImageData || null,
+                    replies: [], 
+                    createdAt: serverTimestamp()
+                });
+                
+                document.getElementById("post-input").value = "";
+                document.getElementById("post-image-upload").value = "";
+                document.getElementById("upload-status").classList.add("hidden");
+                pendingImageData = null;
+                window.showToast("Gönderi akışa fırlatıldı!", "success");
+            } catch (err) {
+                window.showToast("Gönderilirken limit aşıldı, daha küçük bir resim dene.", "error");
+            }
         };
 
         window.deletePost = async function(postId) {
@@ -479,8 +531,8 @@
                     const p = docSnap.data();
                     const el = document.createElement("div");
                     el.className = "glass-card rounded-2xl p-4 space-y-3.5 border border-slate-800";
-                    let imgHtml = p.sharedImage ? `<img src="${p.sharedImage}" class="max-w-[300px] w-full rounded-xl border border-slate-800 shadow-inner mt-2">` : "";
-                    let deleteBtnHtml = (currentUser && p.uid === currentUser.uid) ? `<button onclick="deletePost('${docSnap.id}')" class="text-[10px] text-rose-400">Sil 🗑️</button>` : "";
+                    let imgHtml = p.sharedImage ? `<img src="${p.sharedImage}" class="max-w-full rounded-xl border border-slate-800 shadow-inner mt-2">` : "";
+                    let deleteBtnHtml = (currentUser && p.uid === currentUser.uid) ? `<button onclick="deletePost('${docSnap.id}')" class="text-[10px] text-rose-400 bg-rose-950/40 px-2 py-1 rounded">Sil 🗑️</button>` : "";
                     let repliesHtml = p.replies && p.replies.length > 0 ? `<div class="mt-3 pt-3 border-t border-slate-900 space-y-2 bg-slate-950/30 p-2 rounded-xl">${p.replies.map(r => `<div class="text-[11px] text-slate-400"><span class="font-extrabold text-slate-200">${r.userName}:</span> ${r.content}</div>`).join('')}</div>` : "";
 
                     el.innerHTML = `
@@ -531,6 +583,25 @@
             for (let card of document.getElementById("feed-container").children) card.style.display = card.innerText.toLowerCase().includes(q) ? "block" : "none";
         };
 
+        window.shareCanvasAsImage = async function() {
+            try {
+                const imageUrl = canvas.toDataURL("image/png");
+                await addDoc(collection(db, "aura_ultra_posts"), {
+                    uid: currentUser.uid,
+                    userName: currentUser.displayName,
+                    userPhoto: userCustomAvatar || currentUser.photoURL,
+                    content: "🎨 Tuvalimde yepyeni bir şaheser tasarladım!",
+                    sharedImage: imageUrl,
+                    replies: [],
+                    createdAt: serverTimestamp()
+                });
+                window.showToast("Görsel akışta başarıyla yayınlandı!", "success");
+                window.switchTab('feed');
+            } catch (err) {
+                window.showToast("Görsel paylaşımında hata oluştu.", "error");
+            }
+        };
+
         window.addNewPoll = async function() {
             const q = document.getElementById("new-poll-title").value.trim();
             const o1 = document.getElementById("new-poll-opt1").value.trim();
@@ -543,7 +614,6 @@
             window.showToast("Anket başlatıldı!");
         };
 
-        // GÜVENLİ OY SİSTEMİ (Tek Oy Hakkı)
         window.votePollDynamic = async function(id, optionIndex) {
             const pollRef = doc(db, "aura_ultra_polls", id);
             const snap = await getDoc(pollRef);
