@@ -6,34 +6,34 @@
     <title>Gündem, Sohbet & Ünlüler</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom scrollbar for beautiful look */
-        ::-webkit-scrollbar { width: 4px; }
+        /* Modern kaydırma çubuğu */
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans">
     
-    <div class="max-w-md mx-auto min-h-screen flex flex-col bg-white shadow-xl relative pb-16">
+    <div class="max-w-md mx-auto min-h-screen flex flex-col bg-white shadow-2xl relative pb-16">
         
         <header class="p-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-20">
             <h1 id="page-title" class="text-xl font-bold text-indigo-600">⚡ Gündem</h1>
             <div id="user-area"></div>
         </header>
 
-        <div id="login-screen" class="flex-1 flex flex-col items-center justify-center p-6 space-y-4">
-            <div class="text-6xl animate-bounce">🚀</div>
-            <h2 class="text-2xl font-bold text-center text-slate-800">Dünyaya Bağlan!</h2>
-            <p class="text-slate-500 text-center text-sm px-6">Gündemi yakala, toplulukla chatleş ve ünlü yapay zeka karakterleriyle birebir konuş.</p>
-            <button id="btn-login" class="w-full max-w-xs py-3 px-6 bg-slate-900 text-white rounded-full font-semibold hover:bg-slate-800 transition shadow-lg">
-                Google ile Giriş Yap
+        <div id="login-screen" class="flex-1 flex flex-col items-center justify-center p-6 space-y-6">
+            <div class="text-7xl animate-pulse">🚀</div>
+            <h2 class="text-3xl font-extrabold text-center text-slate-900 tracking-tight">Yeni Nesil Sosyal Medya</h2>
+            <p class="text-slate-500 text-center text-sm px-6 leading-relaxed">Gündemi yakala, toplulukla anlık sohbet et ve yapay zeka karakterleriyle birebir konuşmaya başla.</p>
+            <button id="btn-login" class="w-full max-w-xs py-4 px-6 bg-slate-900 text-white rounded-full font-bold hover:bg-slate-800 transition shadow-xl flex items-center justify-center space-x-2">
+                <span>Google ile Giriş Yap</span>
             </button>
         </div>
 
         <div id="app-screen" class="hidden flex-1 flex flex-col p-4 overflow-y-auto">
             
             <section id="tab-gundem" class="space-y-6">
-                <div class="bg-slate-100 p-4 rounded-2xl">
+                <div class="bg-slate-100 p-4 rounded-2xl border border-slate-200/50">
                     <textarea id="input-gundem" placeholder="Gündeme dair ne paylaşmak istersin?" class="w-full bg-transparent border-none focus:outline-none resize-none text-slate-800 text-sm" rows="2"></textarea>
                     <div class="flex justify-end mt-2">
                         <button id="btn-paylas" class="px-5 py-1.5 bg-indigo-600 text-white rounded-full text-xs font-semibold hover:bg-indigo-700 transition">Paylaş</button>
@@ -48,7 +48,7 @@
             <section id="tab-chat" class="hidden flex flex-col h-[70vh]">
                 <div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 pr-1 mb-4 flex flex-col">
                     </div>
-                <div class="flex items-center space-x-2 bg-slate-100 p-2 rounded-full">
+                <div class="flex items-center space-x-2 bg-slate-100 p-2 rounded-full border border-slate-200">
                     <input type="text" id="input-chat" placeholder="Bir mesaj yaz..." class="flex-1 bg-transparent border-none focus:outline-none px-3 text-sm text-slate-800" />
                     <button id="btn-send-chat" class="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition">
                         ✈️
@@ -58,18 +58,15 @@
 
             <section id="tab-unluler" class="hidden flex flex-col h-[70vh]">
                 <div class="flex space-x-2 overflow-x-auto pb-3 mb-2 border-b border-slate-100">
-                    <button class="celebrity-btn active px-4 py-1.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 border border-indigo-200" data-cel="elon">Elon Musk</button>
-                    <button class="celebrity-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-transparent" data-cel="einstein">Einstein</button>
-                    <button class="celebrity-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-transparent" data-cel="shakespeare">Shakespeare</button>
+                    <button class="celebrity-btn px-4 py-1.5 rounded-full text-xs font-bold transition" data-cel="elon" id="btn-celeb-elon">Elon Musk</button>
+                    <button class="celebrity-btn px-4 py-1.5 rounded-full text-xs font-bold transition" data-cel="einstein" id="btn-celeb-einstein">Einstein</button>
+                    <button class="celebrity-btn px-4 py-1.5 rounded-full text-xs font-bold transition" data-cel="shakespeare" id="btn-celeb-shakespeare">Shakespeare</button>
                 </div>
                 <div id="ai-messages" class="flex-1 overflow-y-auto space-y-3 pr-1 mb-4 flex flex-col">
-                    <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-3 text-xs text-indigo-800 max-w-[80%]">
-                        Merhaba! Ben Elon. Mars'a gitmek mi istiyorsun, yoksa X hakkında mı konuşalım? 🚀
                     </div>
-                </div>
-                <div class="flex items-center space-x-2 bg-slate-100 p-2 rounded-full">
+                <div class="flex items-center space-x-2 bg-slate-100 p-2 rounded-full border border-slate-200">
                     <input type="text" id="input-ai" placeholder="Ünlüye sorunu sor..." class="flex-1 bg-transparent border-none focus:outline-none px-3 text-sm text-slate-800" />
-                    <button id="btn-send-ai" class="p-2 bg-indigo-600 text-white rounded-full">
+                    <button id="btn-send-ai" class="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition">
                         ⚡
                     </button>
                 </div>
@@ -78,15 +75,15 @@
         </div>
 
         <nav id="bottom-nav" class="hidden fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-100 flex justify-around items-center h-16 z-20">
-            <button class="nav-item flex flex-col items-center space-y-1 text-indigo-600" data-tab="gundem">
+            <button class="nav-item flex flex-col items-center space-y-1 text-indigo-600 w-full py-2" data-tab="gundem">
                 <span class="text-xl">⚡</span>
                 <span class="text-[10px] font-bold">Gündem</span>
             </button>
-            <button class="nav-item flex flex-col items-center space-y-1 text-slate-400 hover:text-indigo-600" data-tab="chat">
+            <button class="nav-item flex flex-col items-center space-y-1 text-slate-400 hover:text-indigo-600 w-full py-2" data-tab="chat">
                 <span class="text-xl">💬</span>
                 <span class="text-[10px] font-bold">Sohbet</span>
             </button>
-            <button class="nav-item flex flex-col items-center space-y-1 text-slate-400 hover:text-indigo-600" data-tab="unluler">
+            <button class="nav-item flex flex-col items-center space-y-1 text-slate-400 hover:text-indigo-600 w-full py-2" data-tab="unluler">
                 <span class="text-xl">🎭</span>
                 <span class="text-[10px] font-bold">Ünlüler</span>
             </button>
@@ -99,7 +96,6 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Firebase Yapılandırması
         const firebaseConfig = {
             apiKey: "AIzaSyBp-FSOxxPBtvyOCLDXMz5G8OsdEhjx5uk",
             authDomain: "signub-c831e.firebaseapp.com",
@@ -114,7 +110,6 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // UI Elementleri
         const btnLogin = document.getElementById("btn-login");
         const btnPaylas = document.getElementById("btn-paylas");
         const inputGundem = document.getElementById("input-gundem");
@@ -123,7 +118,7 @@
         const appScreen = document.getElementById("app-screen");
         const bottomNav = document.getElementById("bottom-nav");
 
-        // Sekmeler Arası Geçiş Mekanizması
+        // Sekme Değiştirme Sistemi (Hatasız ve Temiz)
         const tabs = {
             gundem: { el: document.getElementById("tab-gundem"), title: "⚡ Gündem" },
             chat: { el: document.getElementById("tab-chat"), title: "💬 Ortak Sohbet" },
@@ -134,17 +129,22 @@
             button.addEventListener("click", () => {
                 const targetTab = button.getAttribute("data-tab");
                 
-                // Buton stillerini güncelle
+                // Aktif buton rengi
                 document.querySelectorAll(".nav-item").forEach(btn => {
                     btn.classList.replace("text-indigo-600", "text-slate-400");
                 });
                 button.classList.replace("text-slate-400", "text-indigo-600");
 
-                // Sekmeleri gizle/göster
+                // Sekmeleri Aç/Kapa
                 Object.keys(tabs).forEach(key => {
                     if (key === targetTab) {
                         tabs[key].el.classList.remove("hidden");
                         document.getElementById("page-title").textContent = tabs[key].title;
+                        if(key === 'chat') {
+                            // Chat sayfasına girildiğinde scrollu en aşağı kaydır
+                            const chatMessages = document.getElementById("chat-messages");
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                        }
                     } else {
                         tabs[key].el.classList.add("hidden");
                     }
@@ -152,7 +152,7 @@
             });
         });
 
-        // AUTH DURUMU VE KULLANICI KAYDI
+        // KULLANICI KONTROLÜ
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 document.getElementById("login-screen").classList.add("hidden");
@@ -169,7 +169,7 @@
 
                 userArea.innerHTML = `
                     <div class="flex items-center space-x-2">
-                        <img src="${user.photoURL}" class="w-8 h-8 rounded-full border border-indigo-200" />
+                        <img src="${user.photoURL}" class="w-8 h-8 rounded-full border-2 border-indigo-500" />
                         <button id="btn-logout" class="text-xs text-red-500 font-bold hover:underline">Çıkış</button>
                     </div>
                 `;
@@ -177,6 +177,7 @@
                 
                 gundemiDinle();
                 chatDinle();
+                selectCelebrity("elon"); // İlk açılışta Elon'u seç
             } else {
                 document.getElementById("login-screen").classList.remove("hidden");
                 appScreen.classList.add("hidden");
@@ -185,12 +186,11 @@
             }
         });
 
-        // Google ile Giriş
         btnLogin.addEventListener("click", () => {
             signInWithPopup(auth, provider).catch(err => console.error(err));
         });
 
-        // GÜNDEM MODÜLÜ
+        // 1. GÜNDEM SİSTEMİ
         btnPaylas.addEventListener("click", async () => {
             const text = inputGundem.value.trim();
             if(!text) return;
@@ -215,8 +215,8 @@
                     el.innerHTML = `
                         <img src="${post.userPhoto}" class="w-9 h-9 rounded-full" />
                         <div>
-                            <h4 class="font-bold text-xs text-slate-700">${post.userName}</h4>
-                            <p class="text-slate-600 text-sm mt-1">${post.content}</p>
+                            <h4 class="font-bold text-xs text-slate-800">${post.userName}</h4>
+                            <p class="text-slate-600 text-sm mt-1 leading-relaxed">${post.content}</p>
                         </div>
                     `;
                     gundemListesi.appendChild(el);
@@ -224,7 +224,7 @@
             });
         }
 
-        // ORTAK CHAT MODÜLÜ
+        // 2. CHAT SİSTEMİ (Sıfır Hata, Anlık Akış)
         const btnSendChat = document.getElementById("btn-send-chat");
         const inputChat = document.getElementById("input-chat");
         const chatMessages = document.getElementById("chat-messages");
@@ -242,8 +242,13 @@
             inputChat.value = "";
         });
 
+        // Enter tuşuyla mesaj gönderme desteği
+        inputChat.addEventListener("keypress", (e) => {
+            if(e.key === "Enter") btnSendChat.click();
+        });
+
         function chatDinle() {
-            const q = query(collection(db, "chats"), orderBy("createdAt", "asc"), limit(50));
+            const q = query(collection(db, "chats"), orderBy("createdAt", "asc"), limit(60));
             onSnapshot(q, (snapshot) => {
                 chatMessages.innerHTML = "";
                 snapshot.forEach(doc => {
@@ -252,11 +257,11 @@
                     const el = document.createElement("div");
                     el.className = `flex ${isMe ? 'justify-end' : 'justify-start'} w-full`;
                     el.innerHTML = `
-                        <div class="flex items-end space-x-2 ${isMe ? 'flex-row-reverse space-x-reverse' : ''} max-w-[80%]">
-                            <img src="${msg.userPhoto}" class="w-6 h-6 rounded-full" />
-                            <div class="p-3 rounded-2xl text-xs ${isMe ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-800'}">
-                                <p class="font-bold mb-0.5 text-[9px] opacity-75">${msg.userName}</p>
-                                <p>${msg.message}</p>
+                        <div class="flex items-end space-x-2 ${isMe ? 'flex-row-reverse space-x-reverse' : ''} max-w-[85%]">
+                            <img src="${msg.userPhoto || 'https://via.placeholder.com/30'}" class="w-7 h-7 rounded-full shadow-sm" />
+                            <div class="p-3 rounded-2xl text-sm ${isMe ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-100 text-slate-800 rounded-bl-none'}">
+                                <span class="block font-bold text-[10px] opacity-75 mb-0.5">${msg.userName}</span>
+                                <p class="leading-snug">${msg.message}</p>
                             </div>
                         </div>
                     `;
@@ -266,45 +271,90 @@
             });
         }
 
-        // ÜNLÜLER YAPAY ZEKA MODÜLÜ (SİMÜLASYON)
+        // 3. GELİŞMİŞ "KARAKTER MOTORLU" ÜNLÜLER SİSTEMİ
         let activeCeleb = "elon";
-        const celebResponses = {
-            elon: [
-                "Mars için roketler hazır mı? 🚀",
-                "X uygulamasında yeni bir güncelleme yapıyorum.",
-                "Eğer her şey yolunda giderse 10 yıla kalmaz Mars'ta koloni kuracağız.",
-                "Dostum, daha fazla yapay zeka ve elektrikli araba lazım."
-            ],
-            einstein: [
-                "Hayal gücü, bilgiden daha önemlidir. 🧠",
-                "Zaman görelidir evlat, kafanı böyle şeylerle yorma.",
-                "Hatalar, yeni bir şeyler denediğini gösterir.",
-                "Formül basit: E = mc²"
-            ],
-            shakespeare: [
-                "Olmak ya da olmamak, işte bütün mesele bu! 🎭",
-                "Gözlerin, karanlığı aydınlatan iki yıldız gibi.",
-                "Kelimeler rüzgar gibidir, önemli olan hissettirdikleridir.",
-                "Hayat, bir gölgeden ibarettir."
-            ]
+        const celebDetails = {
+            elon: { name: "Elon Musk", color: "bg-blue-600", text: "text-blue-800", bg: "bg-blue-50", border: "border-blue-100" },
+            einstein: { name: "Albert Einstein", color: "bg-amber-600", text: "text-amber-800", bg: "bg-amber-50", border: "border-amber-100" },
+            shakespeare: { name: "W. Shakespeare", color: "bg-emerald-600", text: "text-emerald-800", bg: "bg-emerald-50", border: "border-emerald-100" }
         };
 
+        const celebEngine = {
+            elon: {
+                welcome: "Mars için biletleri hazırladın mı dostum? Yoksa roket motorları hakkında mı konuşacağız? 🚀",
+                keywords: {
+                    "para": "Para sadece kaynak tahsisi için dijital bir veri tabanıdır. Önemli olan insanlığın geleceği!",
+                    "mars": "Mars'a gitmek zorundayız çünkü çok gezegenli bir tür olmak bizi yok olmaktan kurtaracak tek şey.",
+                    "yapay zeka": "Yapay zeka çok hızlı gelişiyor. Dikkatli olmazsak insanlık için tehlikeli olabilir.",
+                    "tesla": "Elektrikli araçlar sadece başlangıçtı. Şimdi sırada otonom sürüş devrimi var."
+                },
+                fallback: [
+                    "Bunu X uygulamasında tartışmalıyız! 😉",
+                    "İlginç bir yaklaşım, ama daha fazla roket gücüne ihtiyacımız var.",
+                    "Zaman değerlidir, bu yüzden doğrudan konuya gelelim."
+                ]
+            },
+            einstein: {
+                welcome: "Doğa kanunları üzerine felsefe yapmaya hazır mısın evlat? Zaman görelidir! 🧠",
+                keywords: {
+                    "zaman": "Zaman, sadece bir illüzyondan ibarettir. Geçmiş, şimdi ve gelecek aynı anda var olur.",
+                    "fizik": "Fizik, Tanrı'nın evreni yaratırken kullandığı kuralları anlama çabasıdır.",
+                    "formül": "E = mc² formülü kütle ile enerjinin aslında aynı şey olduğunu söyler.",
+                    "zeka": "Zeki olmanın ölçüsü, gerektiğinde düşüncelerini değiştirebilme yeteneğidir."
+                },
+                fallback: [
+                    "Hayal gücü bilgiden daha önemlidir, bunu sakın unutma.",
+                    "Doğaya derinlemesine bak, o zaman her şeyi daha iyi anlayacaksın.",
+                    "Önemli olan soru sormayı bırakmamaktır."
+                ]
+            },
+            shakespeare: {
+                welcome: "Kelimelerin büyülü dünyasına hoş geldin şair ruhlu dostum. 🎭",
+                keywords: {
+                    "aşk": "Aşk gözle değil, ruhla görülür; bu yüzden kanatlı aşk tanrısı Cupid hep kör tasvir edilir.",
+                    "hayat": "Dünya bir sahnedir, bizlerse sadece birer oyuncuyuz.",
+                    "ölüm": "Olmak ya da olmamak! İşte bütün mesele bu.",
+                    "kelime": "Kelimeler rüzgâra benzer, onları hissetmek gerek."
+                },
+                fallback: [
+                    "Hüzünlü bir gecenin ardından her zaman parlak bir gün doğar.",
+                    "Kalbinin sesini dinle, o sana en doğru piyesi fısıldayacaktır.",
+                    "Altın olan her şey parlamaz."
+                ]
+            }
+        };
+
+        function selectCelebrity(celebKey) {
+            activeCeleb = celebKey;
+            
+            // Butonların görsel durumunu güncelle
+            document.querySelectorAll(".celebrity-btn").forEach(btn => {
+                const isTarget = btn.getAttribute("data-cel") === celebKey;
+                const activeClasses = "bg-indigo-600 text-white shadow-md border-transparent";
+                const inactiveClasses = "bg-slate-100 text-slate-600 border-transparent hover:bg-slate-200";
+                
+                if (isTarget) {
+                    btn.className = `celebrity-btn px-4 py-1.5 rounded-full text-xs font-bold transition ${activeClasses}`;
+                } else {
+                    btn.className = `celebrity-btn px-4 py-1.5 rounded-full text-xs font-bold transition ${inactiveClasses}`;
+                }
+            });
+
+            // Chat ekranını temizle ve yeni ünlüye göre karşılama mesajı yaz
+            const details = celebDetails[celebKey];
+            const engine = celebEngine[celebKey];
+            document.getElementById("ai-messages").innerHTML = `
+                <div class="${details.bg} ${details.border} border p-3 rounded-2xl text-sm ${details.text} max-w-[85%] rounded-bl-none shadow-sm">
+                    <strong class="block text-[10px] uppercase tracking-wider mb-1 opacity-70">${details.name}</strong>
+                    <p class="leading-relaxed">${engine.welcome}</p>
+                </div>
+            `;
+        }
+
+        // Ünlü butonlarına tıklama olayı
         document.querySelectorAll(".celebrity-btn").forEach(btn => {
             btn.addEventListener("click", () => {
-                document.querySelectorAll(".celebrity-btn").forEach(b => {
-                    b.classList.replace("bg-indigo-100", "bg-slate-100");
-                    b.classList.replace("text-indigo-700", "text-slate-600");
-                });
-                btn.classList.replace("bg-slate-100", "bg-indigo-100");
-                btn.classList.replace("text-slate-600", "text-indigo-700");
-                activeCeleb = btn.getAttribute("data-cel");
-                
-                // Karakter değiştiğinde karşılama mesajı
-                document.getElementById("ai-messages").innerHTML = `
-                    <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-3 text-xs text-indigo-800 max-w-[80%]">
-                        Ben ${btn.textContent}! Bana istediğini sorabilirsin. ✨
-                    </div>
-                `;
+                selectCelebrity(btn.getAttribute("data-cel"));
             });
         });
 
@@ -313,36 +363,61 @@
         const aiMessages = document.getElementById("ai-messages");
 
         btnSendAi.addEventListener("click", () => {
-            const text = inputAi.value.trim();
-            if(!text) return;
+            const userText = inputAi.value.trim();
+            if(!userText) return;
 
-            // Kullanıcı mesajını ekle
-            const userMsgEl = document.createElement("div");
-            userMsgEl.className = "flex justify-end w-full";
-            userMsgEl.innerHTML = `
-                <div class="p-3 bg-slate-900 text-white rounded-2xl text-xs max-w-[80%]">
-                    ${text}
+            // Kullanıcının mesajını ekrana bas
+            const userMsg = document.createElement("div");
+            userMsg.className = "flex justify-end w-full";
+            userMsg.innerHTML = `
+                <div class="p-3 bg-slate-900 text-white rounded-2xl text-sm max-w-[85%] rounded-br-none shadow-md">
+                    ${userText}
                 </div>
             `;
-            aiMessages.appendChild(userMsgEl);
+            aiMessages.appendChild(userMsg);
             inputAi.value = "";
+            aiMessages.scrollTop = aiMessages.scrollHeight;
 
-            // Ünlü Yapay Zeka Cevabı Simüle et
+            // Ünlü Yapay Zeka Motorunu Çalıştır
             setTimeout(() => {
-                const responses = celebResponses[activeCeleb];
-                const randomReply = responses[Math.floor(Math.random() * responses.length)];
-                
-                const aiMsgEl = document.createElement("div");
-                aiMsgEl.className = "flex justify-start w-full";
-                aiMsgEl.innerHTML = `
-                    <div class="p-3 bg-indigo-50 border border-indigo-100 text-indigo-800 rounded-2xl text-xs max-w-[80%]">
-                        <strong class="block text-[9px] uppercase tracking-wider mb-1 opacity-70">${activeCeleb}</strong>
-                        ${randomReply}
+                const engine = celebEngine[activeCeleb];
+                const details = celebDetails[activeCeleb];
+                let reply = "";
+
+                // Kullanıcının yazdığı kelimeleri analiz et
+                const lowerText = userText.toLowerCase();
+                let foundKeyword = false;
+
+                for (const key in engine.keywords) {
+                    if (lowerText.includes(key)) {
+                        reply = engine.keywords[key];
+                        foundKeyword = true;
+                        break;
+                    }
+                }
+
+                // Eğer anahtar kelime bulunamazsa rastgele havuzdan cevap ver
+                if (!foundKeyword) {
+                    reply = engine.fallback[Math.floor(Math.random() * engine.fallback.length)];
+                }
+
+                // AI Mesajını ekrana bas
+                const aiMsg = document.createElement("div");
+                aiMsg.className = "flex justify-start w-full";
+                aiMsg.innerHTML = `
+                    <div class="${details.bg} ${details.border} border p-3 rounded-2xl text-sm ${details.text} max-w-[85%] rounded-bl-none shadow-sm">
+                        <strong class="block text-[10px] uppercase tracking-wider mb-1 opacity-70">${details.name}</strong>
+                        <p class="leading-relaxed">${reply}</p>
                     </div>
                 `;
-                aiMessages.appendChild(aiMsgEl);
+                aiMessages.appendChild(aiMsg);
                 aiMessages.scrollTop = aiMessages.scrollHeight;
-            }, 1000);
+            }, 800); // 800ms "düşünme" gecikmesi
+        });
+
+        // Ünlülerde enter tuşuyla mesaj atma
+        inputAi.addEventListener("keypress", (e) => {
+            if(e.key === "Enter") btnSendAi.click();
         });
     </script>
 </body>
