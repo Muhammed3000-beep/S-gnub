@@ -6,12 +6,9 @@
     <title>Neon Gündem & Sohbet</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Özelleştirilmiş Neon Kaydırma Çubuğu */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #8b5cf6; border-radius: 10px; }
-        
-        /* Arka plan neon parıltıları için ekstra animasyon */
         .neon-glow {
             box-shadow: 0 0 20px rgba(139, 92, 246, 0.15), 0 0 40px rgba(236, 72, 153, 0.1);
         }
@@ -129,7 +126,19 @@
         const appScreen = document.getElementById("app-screen");
         const bottomNav = document.getElementById("bottom-nav");
 
-        // Sekme Değiştirme Sistemi
+        // Güvenli metin temizleme fonksiyonu (XSS Koruması)
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+
         const tabs = {
             gundem: { el: document.getElementById("tab-gundem"), title: "✨ Gündem" },
             chat: { el: document.getElementById("tab-chat"), title: "💬 Ortak Sohbet" },
@@ -139,14 +148,9 @@
         document.querySelectorAll(".nav-item").forEach(button => {
             button.addEventListener("click", () => {
                 const targetTab = button.getAttribute("data-tab");
-                
-                // Aktif buton rengi
-                document.querySelectorAll(".nav-item").forEach(btn => {
-                    btn.classList.replace("text-violet-400", "text-slate-500");
-                });
+                document.querySelectorAll(".nav-item").forEach(btn => btn.classList.replace("text-violet-400", "text-slate-500"));
                 button.classList.replace("text-slate-500", "text-violet-400");
 
-                // Sekmeleri Aç/Kapa
                 Object.keys(tabs).forEach(key => {
                     if (key === targetTab) {
                         tabs[key].el.classList.remove("hidden");
@@ -162,7 +166,6 @@
             });
         });
 
-        // KULLANICI KONTROLÜ
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 document.getElementById("login-screen").classList.add("hidden");
@@ -177,13 +180,22 @@
                     lastLogin: serverTimestamp()
                 }, { merge: true });
 
-                userArea.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        <img src="${user.photoURL}" class="w-8 h-8 rounded-full border-2 border-violet-500 shadow-lg" />
-                        <button id="btn-logout" class="text-xs text-rose-400 font-bold hover:underline">Çıkış</button>
-                    </div>
-                `;
-                document.getElementById("btn-logout").addEventListener("click", () => signOut(auth));
+                userArea.innerHTML = "";
+                const userDiv = document.createElement("div");
+                userDiv.className = "flex items-center space-x-2";
+                
+                const userImg = document.createElement("img");
+                userImg.src = user.photoURL;
+                userImg.className = "w-8 h-8 rounded-full border-2 border-violet-500 shadow-lg";
+                
+                const logoutBtn = document.createElement("button");
+                logoutBtn.className = "text-xs text-rose-400 font-bold hover:underline";
+                logoutBtn.textContent = "Çıkış";
+                logoutBtn.addEventListener("click", () => signOut(auth));
+
+                userDiv.appendChild(userImg);
+                userDiv.appendChild(logoutBtn);
+                userArea.appendChild(userDiv);
                 
                 gundemiDinle();
                 chatDinle();
@@ -200,7 +212,6 @@
             signInWithPopup(auth, provider).catch(err => console.error(err));
         });
 
-        // 1. GÜNDEM SİSTEMİ
         btnPaylas.addEventListener("click", async () => {
             const text = inputGundem.value.trim();
             if(!text) return;
@@ -222,19 +233,29 @@
                     const post = doc.data();
                     const el = document.createElement("div");
                     el.className = "p-4 bg-white/5 backdrop-blur-md rounded-2xl border border-slate-800/80 flex space-x-3 shadow-sm hover:border-slate-700/80 transition duration-300";
-                    el.innerHTML = `
-                        <img src="${post.userPhoto}" class="w-9 h-9 rounded-full border border-slate-700 shadow-sm" />
-                        <div>
-                            <h4 class="font-extrabold text-xs text-slate-200">${post.userName}</h4>
-                            <p class="text-slate-300 text-sm mt-1 leading-relaxed font-medium">${post.content}</p>
-                        </div>
-                    `;
+                    
+                    const img = document.createElement("img");
+                    img.src = post.userPhoto;
+                    img.className = "w-9 h-9 rounded-full border border-slate-700 shadow-sm";
+                    
+                    const textDiv = document.createElement("div");
+                    const nameH4 = document.createElement("h4");
+                    nameH4.className = "font-extrabold text-xs text-slate-200";
+                    nameH4.textContent = post.userName;
+                    
+                    const contentP = document.createElement("p");
+                    contentP.className = "text-slate-300 text-sm mt-1 leading-relaxed font-medium";
+                    contentP.textContent = post.content; // textContent XSS'i önler
+                    
+                    textDiv.appendChild(nameH4);
+                    textDiv.appendChild(contentP);
+                    el.appendChild(img);
+                    el.appendChild(textDiv);
                     gundemListesi.appendChild(el);
                 });
             });
         }
 
-        // 2. CHAT SİSTEMİ
         const btnSendChat = document.getElementById("btn-send-chat");
         const inputChat = document.getElementById("input-chat");
         const chatMessages = document.getElementById("chat-messages");
@@ -263,24 +284,39 @@
                 snapshot.forEach(doc => {
                     const msg = doc.data();
                     const isMe = msg.uid === auth.currentUser.uid;
-                    const el = document.createElement("div");
-                    el.className = `flex ${isMe ? 'justify-end' : 'justify-start'} w-full`;
-                    el.innerHTML = `
-                        <div class="flex items-end space-x-2 ${isMe ? 'flex-row-reverse space-x-reverse' : ''} max-w-[85%]">
-                            <img src="${msg.userPhoto || 'https://via.placeholder.com/30'}" class="w-7 h-7 rounded-full border border-slate-800 shadow-sm" />
-                            <div class="p-3.5 rounded-2xl text-sm shadow-lg ${isMe ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-br-none' : 'bg-white/5 border border-slate-800/80 text-slate-100 rounded-bl-none'}">
-                                <span class="block font-black text-[9px] uppercase tracking-wider opacity-80 mb-0.5 ${isMe ? 'text-violet-200' : 'text-fuchsia-400'}">${msg.userName}</span>
-                                <p class="leading-snug font-medium">${msg.message}</p>
-                            </div>
-                        </div>
-                    `;
-                    chatMessages.appendChild(el);
+                    
+                    const wrapper = document.createElement("div");
+                    wrapper.className = `flex ${isMe ? 'justify-end' : 'justify-start'} w-full`;
+                    
+                    const container = document.createElement("div");
+                    container.className = `flex items-end space-x-2 ${isMe ? 'flex-row-reverse space-x-reverse' : ''} max-w-[85%]`;
+                    
+                    const img = document.createElement("img");
+                    img.src = msg.userPhoto || 'https://via.placeholder.com/30';
+                    img.className = "w-7 h-7 rounded-full border border-slate-800 shadow-sm";
+                    
+                    const bubble = document.createElement("div");
+                    bubble.className = `p-3.5 rounded-2xl text-sm shadow-lg ${isMe ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-br-none' : 'bg-white/5 border border-slate-800/80 text-slate-100 rounded-bl-none'}`;
+                    
+                    const authorSpan = document.createElement("span");
+                    authorSpan.className = `block font-black text-[9px] uppercase tracking-wider opacity-80 mb-0.5 ${isMe ? 'text-violet-200' : 'text-fuchsia-400'}`;
+                    authorSpan.textContent = msg.userName;
+                    
+                    const textP = document.createElement("p");
+                    textP.className = "leading-snug font-medium";
+                    textP.textContent = msg.message; // Güvenli yazım
+                    
+                    bubble.appendChild(authorSpan);
+                    bubble.appendChild(textP);
+                    container.appendChild(img);
+                    container.appendChild(bubble);
+                    wrapper.appendChild(container);
+                    chatMessages.appendChild(wrapper);
                 });
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             });
         }
 
-        // 3. GELİŞMİŞ "KARAKTER MOTORLU" ÜNLÜLER SİSTEMİ
         let activeCeleb = "elon";
         const celebDetails = {
             elon: { name: "Elon Musk", color: "from-blue-600/20 to-cyan-600/20", text: "text-blue-100", border: "border-blue-500/30", titleColor: "text-blue-400" },
@@ -306,7 +342,7 @@
             einstein: {
                 welcome: "Doğa kanunları üzerine felsefe yapmaya hazır mısın evlat? Zaman görelidir! 🧠",
                 keywords: {
-                    "zaman": "Zaman, sadece bir illüzyondan ibarettir. Geçmiş, şimdi ve gelecek aynı onda var olur.",
+                    "zaman": "Zaman, sadece bir illüzyondan ibarettir. Geçmiş, şimdi ve gelecek aynı anda var olur.",
                     "fizik": "Fizik, Tanrı'nın evreni yaratırken kullandığı kuralları anlama çabasıdır.",
                     "formül": "E = mc² formülü kütle ile enerjinin aslında aynı şey olduğunu söyler.",
                     "zeka": "Zeki olmanın ölçüsü, gerektiğinde düşüncelerini değiştirebilme yeteneğidir."
@@ -350,18 +386,26 @@
 
             const details = celebDetails[celebKey];
             const engine = celebEngine[celebKey];
-            document.getElementById("ai-messages").innerHTML = `
-                <div class="bg-gradient-to-br ${details.color} ${details.border} border p-4 rounded-2xl text-sm ${details.text} max-w-[85%] rounded-bl-none shadow-lg backdrop-blur-md">
-                    <strong class="block text-[9px] uppercase tracking-wider mb-1.5 font-black ${details.titleColor}">${details.name}</strong>
-                    <p class="leading-relaxed font-semibold">${engine.welcome}</p>
-                </div>
-            `;
+            aiMessages.innerHTML = "";
+            
+            const introDiv = document.createElement("div");
+            introDiv.className = `bg-gradient-to-br ${details.color} ${details.border} border p-4 rounded-2xl text-sm ${details.text} max-w-[85%] rounded-bl-none shadow-lg backdrop-blur-md`;
+            
+            const strongTitle = document.createElement("strong");
+            strongTitle.className = `block text-[9px] uppercase tracking-wider mb-1.5 font-black ${details.titleColor}`;
+            strongTitle.textContent = details.name;
+            
+            const textP = document.createElement("p");
+            textP.className = "leading-relaxed font-semibold";
+            textP.textContent = engine.welcome;
+
+            introDiv.appendChild(strongTitle);
+            introDiv.appendChild(textP);
+            aiMessages.appendChild(introDiv);
         }
 
         document.querySelectorAll(".celebrity-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-                selectCelebrity(btn.getAttribute("data-cel"));
-            });
+            btn.addEventListener("click", () => selectCelebrity(btn.getAttribute("data-cel")));
         });
 
         const btnSendAi = document.getElementById("btn-send-ai");
@@ -374,11 +418,12 @@
 
             const userMsg = document.createElement("div");
             userMsg.className = "flex justify-end w-full";
-            userMsg.innerHTML = `
-                <div class="p-3.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-2xl text-sm max-w-[85%] rounded-br-none shadow-lg font-semibold">
-                    ${userText}
-                </div>
-            `;
+            
+            const innerBubble = document.createElement("div");
+            innerBubble.className = "p-3.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-2xl text-sm max-w-[85%] rounded-br-none shadow-lg font-semibold";
+            innerBubble.textContent = userText;
+            
+            userMsg.appendChild(innerBubble);
             aiMessages.appendChild(userMsg);
             inputAi.value = "";
             aiMessages.scrollTop = aiMessages.scrollHeight;
@@ -405,12 +450,21 @@
 
                 const aiMsg = document.createElement("div");
                 aiMsg.className = "flex justify-start w-full";
-                aiMsg.innerHTML = `
-                    <div class="bg-gradient-to-br ${details.color} ${details.border} border p-4 rounded-2xl text-sm ${details.text} max-w-[85%] rounded-bl-none shadow-lg backdrop-blur-md">
-                        <strong class="block text-[9px] uppercase tracking-wider mb-1.5 font-black ${details.titleColor}">${details.name}</strong>
-                        <p class="leading-relaxed font-semibold">${reply}</p>
-                    </div>
-                `;
+                
+                const aiBubble = document.createElement("div");
+                aiBubble.className = `bg-gradient-to-br ${details.color} ${details.border} border p-4 rounded-2xl text-sm ${details.text} max-w-[85%] rounded-bl-none shadow-lg backdrop-blur-md`;
+                
+                const authorStrong = document.createElement("strong");
+                authorStrong.className = `block text-[9px] uppercase tracking-wider mb-1.5 font-black ${details.titleColor}`;
+                authorStrong.textContent = details.name;
+                
+                const replyP = document.createElement("p");
+                replyP.className = "leading-relaxed font-semibold";
+                replyP.textContent = reply;
+
+                aiBubble.appendChild(authorStrong);
+                aiBubble.appendChild(replyP);
+                aiMsg.appendChild(aiBubble);
                 aiMessages.appendChild(aiMsg);
                 aiMessages.scrollTop = aiMessages.scrollHeight;
             }, 800);
