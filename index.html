@@ -32,89 +32,52 @@
         input[type="file"] {
             display: none;
         }
-
-        /* YENİ EKLENEN STİLLER */
-        .mood-emojis {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-        }
-        .mood-emojis button {
-            background: #161b33;
-            border: 1px solid #293054;
-            font-size: 1.5rem;
-            padding: 8px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .mood-emojis button:hover {
-            background: #a855f7;
-            transform: scale(1.1);
-        }
-        .tags-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 8px;
-        }
-        .tag {
-            background: #161b33;
-            color: #38bdf8;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            border: 1px solid #293054;
-        }
-        .tag:hover {
-            background: #38bdf8;
-            color: #0d0f1a;
-        }
-        .btn-dice {
-            background: #161b33;
-            border: 1px solid #293054;
-            color: #fff;
-            padding: 6px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-right: 10px;
-            font-size: 11px;
-            transition: 0.2s;
-        }
-        .btn-dice:hover {
-            background: #2563eb;
-        }
-        .leader-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px;
-            border-bottom: 1px solid #161b33;
-            align-items: center;
-        }
-        .leader-item:last-child {
-            border-bottom: none;
-        }
-        .leader-item.gold {
-            background: rgba(168, 85, 247, 0.1);
-            border: 1px solid #a855f7;
-            border-radius: 8px;
-            font-weight: bold;
-        }
-        .leader-name {
-            color: #e2e8f0;
-            font-size: 12px;
-        }
-        .leader-score {
-            color: #a855f7;
-            font-weight: bold;
-            font-size: 12px;
-        }
     </style>
 </head>
 <body class="text-slate-100 min-h-screen flex flex-col selection:bg-fuchsia-500/30">
 
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+    <div id="incoming-call-modal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-pulse">
+        <div class="glass-card max-w-sm w-full rounded-3xl p-6 border-2 border-fuchsia-500 text-center space-y-4">
+            <div class="w-16 h-16 bg-fuchsia-600/20 rounded-full flex items-center justify-center mx-auto animate-bounce text-2xl">📞</div>
+            <h3 class="text-sm font-black text-fuchsia-400 uppercase tracking-widest">⚡ Kozmik Bağlantı İsteği</h3>
+            <p id="caller-name-info" class="text-xs text-slate-300">Biri seni sesli olarak arıyor...</p>
+            <div class="flex space-x-3 justify-center pt-2">
+                <button onclick="acceptCall()" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-bold text-white shadow transition">Kabul Et 🟩</button>
+                <button onclick="rejectCall()" class="px-6 py-2 bg-rose-600 hover:bg-rose-500 rounded-xl text-xs font-bold text-white shadow transition">Reddet 🟥</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="active-call-panel" style="display: none;" class="fixed bottom-5 left-5 z-50 glass-card p-4 rounded-2xl border border-emerald-500/30 flex items-center space-x-4">
+        <div class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></div>
+        <div class="text-[10px] font-bold text-slate-300">
+            <span>🎤 Aktif Sesli Kanal</span>
+            <span id="call-duration" class="block text-emerald-400 font-mono text-[9px]">Görüşülüyor...</span>
+        </div>
+        <button onclick="hangUpCall()" class="px-3 py-1 bg-rose-600 hover:bg-rose-500 rounded-lg text-[9px] font-bold text-white transition">Kapat</button>
+    </div>
+
+    <div id="profile-modal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div class="glass-card max-w-md w-full rounded-3xl p-6 border border-cyan-500/20 space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-sm font-black text-cyan-400 uppercase tracking-widest">🧬 Profil Protokolü</h3>
+                <button onclick="toggleProfileModal(false)" class="text-slate-500 hover:text-slate-300 text-xs font-bold">Kapat ✕</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-[10px] text-slate-400 font-bold block mb-1">PROFİL RESMİ URL</label>
+                    <input type="text" id="edit-avatar-url" placeholder="https://..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 transition">
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-400 font-bold block mb-1">KOZMİK BİYOGRAFİ</label>
+                    <textarea id="edit-bio" placeholder="Kendinden bahset..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 transition resize-none" rows="3"></textarea>
+                </div>
+                <button onclick="saveProfile()" class="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-violet-600 rounded-xl text-xs font-bold text-white shadow">Değişiklikleri Kilitle 🔐</button>
+            </div>
+        </div>
+    </div>
 
     <header class="glass-card sticky top-0 z-40 border-b border-slate-800/80 px-6 py-4 flex items-center justify-between">
         <div class="flex items-center space-x-3">
@@ -150,36 +113,27 @@
                     <h4 id="side-user-name" class="text-xs font-bold text-slate-200">Yükleniyor...</h4>
                     <p id="side-user-bio" class="text-[10px] text-slate-400 italic mt-1 bg-slate-950/40 p-2 rounded-lg border border-slate-900 break-words">Kozmik veri taranıyor...</p>
                 </div>
+                <button onclick="toggleProfileModal(true)" class="w-full py-1.5 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl text-[10px] font-bold text-slate-300 transition">Profili Düzenle ⚙️</button>
             </div>
 
-            <div class="glass-card rounded-2xl p-4 space-y-2 border border-fuchsia-500/20">
-                <h3 class="text-[10px] font-black text-fuchsia-400 uppercase tracking-widest">🔮 BUGÜNKÜ MODUN NE?</h3>
-                <div class="mood-emojis">
-                    <button onclick="selectMood('😎', 'Harika hissediyor!')">😎</button>
-                    <button onclick="selectMood('😴', 'Uykusu var, kahve lazım...')">😴</button>
-                    <button onclick="selectMood('📚', 'Harıl harıl ders çalışıyor!')">📚</button>
-                    <button onclick="selectMood('🍕', 'Acıktı, yemek düşünüyor!')">🍕</button>
-                    <button onclick="selectMood('🤯', 'Sınav haftası!')">🤯</button>
+            <div class="glass-card rounded-2xl p-4 space-y-3 border border-fuchsia-500/20">
+                <h3 class="text-[10px] font-black text-fuchsia-400 uppercase tracking-widest">📞 SESLİ GÖRÜŞME ARAMA</h3>
+                <div class="flex space-x-2">
+                    <input type="email" id="email-search-input" placeholder="Kullanıcı e-postası..." class="w-full bg-slate-950 border border-slate-800 focus:border-fuchsia-500 rounded-xl px-3 py-2 text-[11px] text-slate-100 placeholder-slate-500 focus:outline-none transition">
+                    <button onclick="searchUserByEmail()" class="bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-3 py-2 rounded-xl text-[10px] font-bold transition">Bul</button>
                 </div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-4 space-y-3 border border-cyan-500/10">
-                <h3 class="text-[10px] font-black text-cyan-400 uppercase tracking-widest">🔍 İÇERİK FİLTRESİ</h3>
-                <input type="text" id="search-input" oninput="searchNetwork()" placeholder="Akışta kelime ara..." class="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none transition">
-                
-                <div class="pt-2">
-                    <span class="text-[9px] text-slate-400 font-bold block mb-1">🔥 TREND ETİKETLER</span>
-                    <div class="tags-container">
-                        <span class="tag" onclick="filterByTag('#YKS2026')">#YKS2026</span>
-                        <span class="tag" onclick="filterByTag('#KahveMolası')">#KahveMolası</span>
-                        <span class="tag" onclick="filterByTag('#Tatil')">#Tatil</span>
-                    </div>
-                </div>
+                <div id="email-search-result" class="mt-2 empty:hidden"></div>
             </div>
 
             <div class="glass-card rounded-2xl p-4 space-y-2">
                 <button onclick="switchTab('feed')" id="btn-tab-feed" class="w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition flex items-center space-x-3 bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 text-violet-400 border border-violet-500/20">
                     <span>🪐</span> <span>Kozmik Akış (Feed)</span>
+                </button>
+                <button onclick="switchTab('chat')" id="btn-tab-chat" class="w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition flex items-center space-x-3 text-slate-400 hover:bg-slate-900">
+                    <span>💬</span> <span>Canlı Kolektif Sohbet</span>
+                </button>
+                <button onclick="switchTab('canvas')" id="btn-tab-canvas" class="w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition flex items-center space-x-3 text-slate-400 hover:bg-slate-900">
+                    <span>🎨</span> <span>Gerçek Resim Tuvali</span>
                 </button>
             </div>
         </aside>
@@ -187,8 +141,15 @@
         <main class="lg:col-span-6 space-y-6">
 
             <div id="login-section" class="glass-card rounded-3xl p-8 text-center space-y-6 py-20 relative overflow-hidden">
+                <div class="absolute -top-20 -left-20 w-40 h-40 bg-violet-600/10 rounded-full blur-3xl"></div>
+                <div class="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-500 p-[1px] shadow-2xl">
+                    <div class="w-full h-full bg-[#03050a] rounded-2xl flex items-center justify-center text-4xl">🌌</div>
+                </div>
                 <h2 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400">Aura Giriş Protokolü</h2>
-                <button onclick="googleLogin()" class="w-full py-3 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 rounded-xl font-bold text-xs text-white shadow-lg hover:opacity-95 transition">Google ile Güvenli Bağlan 🚀</button>
+                <p class="text-slate-400 text-xs max-w-sm mx-auto leading-relaxed">Güvenli ve gerçek zamanlı katılım için Google hesabınla anında giriş yap.</p>
+                <div class="space-y-3 max-w-xs mx-auto pt-4">
+                    <button onclick="googleLogin()" class="w-full py-3 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 rounded-xl font-bold text-xs text-white shadow-lg hover:opacity-95 transition">Google ile Güvenli Bağlan 🚀</button>
+                </div>
             </div>
 
             <div id="app-section" style="display: none;" class="space-y-6">
@@ -199,28 +160,51 @@
                         
                         <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded-xl border border-slate-800">
                             <label class="cursor-pointer flex items-center space-x-2 text-cyan-400 hover:text-cyan-300 transition px-3 py-1.5 bg-cyan-950/40 rounded-lg border border-cyan-500/20">
+                                <span class="text-lg font-black">+</span>
                                 <span class="text-[10px] font-bold">Fotoğraf Ekle</span>
-                                <input type="file" id="post-image-upload" accept="image/*">
+                                <input type="file" id="post-image-upload" accept="image/*" onchange="previewAndCompressImage(event)">
                             </label>
-                            
-                            <div class="flex items-center">
-                                <button onclick="generateRandomWhisper()" class="btn-dice">🎲 Rastgele</button>
-                                <button onclick="createPost()" class="px-5 py-2 bg-gradient-to-r from-violet-600 to-cyan-500 rounded-xl text-xs font-bold text-white shadow">Gönder 🚀</button>
-                            </div>
+                            <span id="upload-status" class="text-[9px] text-emerald-400 font-bold hidden">Görsel optimize edildi ✅</span>
+                            <button onclick="createPost()" class="px-5 py-2 bg-gradient-to-r from-violet-600 to-cyan-500 rounded-xl text-xs font-bold text-white shadow">Payload Gönder 🚀</button>
                         </div>
                     </div>
-                    
-                    <div id="feed-container" class="space-y-4">
-                        <div class="glass-card rounded-xl p-4 space-y-2 border border-slate-800">
-                            <div class="flex justify-between items-center border-b border-slate-800/50 pb-2">
-                                <span class="text-xs font-bold text-slate-200">Ahmet Yasin</span>
-                                <div class="flex space-x-2">
-                                    <button class="text-[9px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded">Arkadaş Ekle</button>
-                                    <button onclick="voteUser('hedef_uid')" class="text-[9px] bg-emerald-900/50 hover:bg-emerald-800/50 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded font-bold">⚡ Oy Ver</button>
-                                </div>
-                            </div>
-                            <p class="text-[11px] text-slate-300">Nasılsınız?</p>
+                    <div id="feed-container" class="space-y-4"></div>
+                </div>
+
+                <div id="view-chat" style="display: none;" class="glass-card rounded-2xl flex flex-col h-[60vh] border border-slate-800/60 overflow-hidden">
+                    <div class="p-3 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+                        <span class="text-xs font-bold text-cyan-400">● GERÇEK ZAMANLI SOHBET</span>
+                        <span class="text-[9px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded font-black animate-pulse">LIVE DB</span>
+                    </div>
+                    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-950/20"></div>
+                    <form onsubmit="sendChat(event)" class="p-3 border-t border-slate-800 bg-slate-950/60 flex space-x-2">
+                        <input type="text" id="chat-input" placeholder="Anlık mesaj yazın..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none">
+                        <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl text-xs font-bold text-white">Gönder</button>
+                    </form>
+                </div>
+
+                <div id="view-canvas" style="display: none;" class="space-y-6">
+                    <div class="glass-card rounded-2xl p-5 space-y-5 border border-cyan-500/10">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-sm font-extrabold text-cyan-400">🎨 Gerçek Zamanlı PNG Tuval</h2>
+                            <button onclick="clearBoard()" class="text-[10px] bg-slate-900 border border-slate-800 px-2.5 py-1.5 rounded-lg text-slate-400">Temizle 🧹</button>
                         </div>
+                        
+                        <div class="flex flex-wrap gap-2 justify-center py-2 bg-slate-950 p-2 rounded-xl">
+                            <button onclick="setCurrentColor('#ef4444')" class="w-6 h-6 rounded bg-red-500 border border-white"></button>
+                            <button onclick="setCurrentColor('#f97316')" class="w-6 h-6 rounded bg-orange-500"></button>
+                            <button onclick="setCurrentColor('#22c55e')" class="w-6 h-6 rounded bg-green-500"></button>
+                            <button onclick="setCurrentColor('#06b6d4')" class="w-6 h-6 rounded bg-cyan-500"></button>
+                            <button onclick="setCurrentColor('#a855f7')" class="w-6 h-6 rounded bg-purple-500"></button>
+                            <button onclick="setCurrentColor('#ffffff')" class="w-6 h-6 rounded bg-white"></button>
+                            <button onclick="setCurrentColor('#03050a')" class="px-2 bg-slate-800 rounded text-[10px] font-bold">🧼 Silgi</button>
+                        </div>
+
+                        <div class="max-w-[320px] mx-auto bg-[#03050a] p-1 rounded-xl border border-slate-800">
+                            <canvas id="real-canvas" width="256" height="256" class="w-full aspect-square cursor-crosshair rounded"></canvas>
+                        </div>
+
+                        <button onclick="shareCanvasAsImage()" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-violet-600 text-xs font-bold rounded-xl text-white shadow hover:scale-[1.01] transition">Görsel (PNG) Olarak Akışta Paylaş! 🌍</button>
                     </div>
                 </div>
 
@@ -228,17 +212,19 @@
         </main>
 
         <aside class="lg:col-span-3 space-y-6">
-            
-            <div id="leaderboard-section" style="display:none;" class="glass-card rounded-2xl p-4 space-y-3 border border-violet-500/20">
-                <h3 class="text-[10px] font-black text-violet-400 uppercase tracking-widest">🏆 LİDERLİK TABLOSU</h3>
-                <div id="leaderboard-list" class="space-y-2">
-                    <div class="text-[10px] text-slate-400 text-center py-2">Veriler Yükleniyor...</div>
-                </div>
-            </div>
-
             <div class="glass-card rounded-2xl p-4 space-y-4 border border-cyan-500/10">
                 <h3 class="text-[10px] font-black text-cyan-400 uppercase tracking-widest">📊 KÜRESEL ANKETLER</h3>
                 <div class="space-y-4" id="polls-list-wrapper"></div>
+                
+                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-900 space-y-2">
+                    <span class="text-[10px] text-slate-400 font-bold block">Yeni Anket Oluştur:</span>
+                    <input type="text" id="new-poll-title" placeholder="Anket Sorusu?" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="new-poll-opt1" placeholder="Seçenek A" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none">
+                        <input type="text" id="new-poll-opt2" placeholder="Seçenek B" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none">
+                    </div>
+                    <button onclick="addNewPoll()" class="w-full py-1.5 bg-cyan-600 rounded text-[9px] font-black text-white">ANKETİ BAŞLAT</button>
+                </div>
             </div>
         </aside>
 
@@ -247,12 +233,21 @@
     <audio id="local-audio" autoplay muted style="display:none;"></audio>
     <audio id="remote-audio" autoplay style="display:none;"></audio>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, orderBy, limit, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    <script>
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.onkeydown = function(e) {
+            if(e.keyCode == 123) return false; 
+            if(e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) return false; 
+            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; 
+        }
+    </script>
 
-        // KENDİ FİREBASE BİLGİLERİNİ GİREBİLİRSİN
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, updateDoc, increment, deleteDoc, arrayUnion, where, getDocs } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { getDatabase, ref, push, set, onChildAdded, onValue, remove, get, update } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
+
         const firebaseConfig = {
             apiKey: "AIzaSyDXpYmC0IzpOpwGMkgswBDlo6h5aOlSUEU",
             authDomain: "auraultrax-4c3d4.firebaseapp.com",
@@ -265,147 +260,502 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const rtdb = getDatabase(app); 
         const provider = new GoogleAuthProvider();
 
         let currentUser = null;
+        let selectedColor = "#ef4444";
+        let userCustomAvatar = "";
+        let userCustomBio = "";
+        let pendingImageData = null; 
 
-        // BİLDİRİM FONKSİYONU
-        window.showToast = function(message) {
-            alert("⚡ " + message);
+        // WebRTC Global Değişkenler
+        let localStream = null;
+        let peerConnection = null;
+        let activeCallRef = null;
+        let targetUserUid = null;
+
+        const canvas = document.getElementById("real-canvas");
+        const ctx = canvas.getContext("2d");
+        const pixelSize = 16; 
+
+        const rtcConfig = {
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
         };
 
-        // GİRİŞ YAPMA
+        function initCanvas() {
+            ctx.fillStyle = "#03050a";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        initCanvas();
+
+        canvas.addEventListener("click", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const gridX = Math.floor(x / (rect.width / 16)) * pixelSize;
+            const gridY = Math.floor(y / (rect.height / 16)) * pixelSize;
+            ctx.fillStyle = selectedColor;
+            ctx.fillRect(gridX, gridY, pixelSize, pixelSize);
+        });
+
+        window.setCurrentColor = function(color) { selectedColor = color; };
+        window.clearBoard = function() { initCanvas(); };
+
+        window.showToast = function(message, type = "info") {
+            const container = document.getElementById("toast-container");
+            if(!container) return;
+            const toast = document.createElement("div");
+            toast.className = `p-3 rounded-xl text-xs font-bold border transition duration-300 pointer-events-auto ${
+                type === "success" ? "bg-emerald-950/90 border-emerald-500/20 text-emerald-300" : (type === "error" ? "bg-rose-950/90 border-rose-500/20 text-rose-300" : "bg-slate-900 border-slate-800 text-cyan-300")
+            }`;
+            toast.textContent = "⚡ " + message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        };
+
         window.googleLogin = function() {
-            signInWithPopup(auth, provider).then(async (result) => {
+            signInWithPopup(auth, provider).then((result) => {
                 currentUser = result.user;
-                document.getElementById("login-section").style.display = "none";
-                document.getElementById("app-section").style.display = "block";
-                document.getElementById("user-display").style.display = "flex";
-                document.getElementById("side-profile-card").style.display = "block";
-                document.getElementById("leaderboard-section").style.display = "block";
-                
-                document.getElementById("user-name-tag").textContent = currentUser.displayName;
-                document.getElementById("side-user-name").textContent = currentUser.displayName;
-                
-                // Kullanıcıyı veritabanına kaydet/güncelle (oy sistemi için gerekli)
-                const userRef = doc(db, "aura_users", currentUser.uid);
-                const userSnap = await getDoc(userRef);
-                if (!userSnap.exists()) {
-                    await setDoc(userRef, { 
-                        userName: currentUser.displayName, 
-                        votes: 0 // Yeni kullanıcının oyu sıfır
-                    });
-                }
-
-                listenLeaderboard(); // Giriş yapınca tabloyu dinlemeye başla
+                window.showToast("Başarıyla oturum açıldı!", "success");
+                updateUI(result.user);
             }).catch((error) => {
-                alert("Giriş Başarısız: " + error.message);
+                window.showToast("Giriş Başarısız: " + error.message, "error");
             });
         };
 
-        // YENİ EKLENEN ÖZELLİKLERİN JS KODLARI
-
-        // 1. Mod Seçimi (Sol Menü)
-        window.selectMood = function(emoji, text) {
-            const whisperInput = document.getElementById('post-input');
-            if (whisperInput) {
-                whisperInput.value = `Şu an ${emoji} ${text} #Modum`;
-                window.showToast("Modun fısıltı kutusuna eklendi!");
-            }
+        window.logout = function() {
+            signOut(auth).then(() => {
+                currentUser = null;
+                document.getElementById("login-section").style.display = "block";
+                document.getElementById("app-section").style.display = "none";
+                document.getElementById("user-display").style.display = "none";
+                document.getElementById("side-profile-card").style.display = "none";
+            });
         };
 
-        // 2. Trend Etiket Filtreleme
-        window.filterByTag = function(tag) {
-            const searchInput = document.getElementById('search-input');
-            if (searchInput) {
-                searchInput.value = tag;
-                window.showToast(tag + " etiketine göre filtreleniyor...");
-                // searchNetwork(); // Mevcut arama fonksiyonunu tetikler
-            }
-        };
-
-        // 3. Rastgele Zar (Fısıltı Üretici)
-        const templates = [
-            "Bugün kendime verdiğim en iyi söz: ______ ✨",
-            "Sınava kalan süre daralırken ben: 📈",
-            "Acilen birinin bana motivasyon vermesi lazım!",
-            "Sisteme giren herkese selam olsun 🌌"
-        ];
-        window.generateRandomWhisper = function() {
-            const whisperInput = document.getElementById('post-input');
-            if (whisperInput) {
-                const randomIndex = Math.floor(Math.random() * templates.length);
-                whisperInput.value = templates[randomIndex];
-            }
-        };
-
-        // 4. OY VERME SİSTEMİ (Liderlik Tablosu ve Akış için)
-        window.voteUser = async function(targetUid) {
-            if (!currentUser) return alert("Önce giriş yapmalısın!");
-            if (currentUser.uid === targetUid) return alert("Kendinize oy veremezsiniz!");
-
-            try {
-                const userRef = doc(db, "aura_users", targetUid);
-                await updateDoc(userRef, {
-                    votes: increment(1)
-                });
-                window.showToast("Oy başarıyla gönderildi!");
-            } catch (error) {
-                console.error("Oy verme hatası:", error);
-            }
-        };
-
-        // 5. LİDERLİK TABLOSUNU DİNLEME (İlk 3 Kişi)
-        function listenLeaderboard() {
-            const q = query(collection(db, "aura_users"), orderBy("votes", "desc"), limit(3));
+        async function updateUI(user) {
+            if (!user) return;
+            document.getElementById("login-section").style.display = "none";
+            document.getElementById("app-section").style.display = "block";
+            document.getElementById("user-display").style.display = "flex";
+            document.getElementById("side-profile-card").style.display = "block";
             
-            onSnapshot(q, (snapshot) => {
-                const leaderboardList = document.getElementById("leaderboard-list");
-                leaderboardList.innerHTML = ""; // Temizle
+            try {
+                const userDocRef = doc(db, "aura_users", user.uid);
+                const userDocSnap = await getDoc(userDocRef);
                 
-                let rank = 1;
-                snapshot.forEach((docSnap) => {
-                    const u = docSnap.data();
-                    const uid = docSnap.id;
-                    const isGold = rank === 1 ? "gold" : "";
-                    const medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : "🥉");
-                    
-                    leaderboardList.innerHTML += `
-                        <div class="leader-item ${isGold}">
-                            <div class="flex items-center space-x-2">
-                                <span>${medal}</span>
-                                <span class="leader-name">${u.userName || "Gizemli Kullanıcı"}</span>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <span class="leader-score">${u.votes || 0} oy</span>
-                                <button onclick="voteUser('${uid}')" class="text-[9px] bg-violet-900/50 border border-violet-500 text-white px-1.5 py-0.5 rounded cursor-pointer hover:bg-violet-800 transition">Oy Ver</button>
-                            </div>
-                        </div>
-                    `;
-                    rank++;
-                });
-
-                if(snapshot.empty) {
-                    leaderboardList.innerHTML = `<div class="text-[10px] text-slate-400 text-center">Henüz oy alan yok.</div>`;
+                if (userDocSnap.exists()) {
+                    const userData = userDocSnap.data();
+                    userCustomAvatar = userData.userPhoto || user.photoURL;
+                    userCustomBio = userData.bio || "Henüz bir kozmik biyografi eklenmedi.";
+                    await setDoc(userDocRef, { email: user.email }, { merge: true });
+                } else {
+                    userCustomAvatar = user.photoURL;
+                    userCustomBio = "Henüz bir kozmik biyografi eklenmedi.";
+                    await setDoc(userDocRef, {
+                        userName: user.displayName,
+                        email: user.email,
+                        userPhoto: user.photoURL,
+                        bio: userCustomBio
+                    }, { merge: true });
                 }
-            });
+            } catch (e) {
+                userCustomAvatar = user.photoURL;
+                userCustomBio = "Henüz bir kozmik biyografi eklenmedi.";
+            }
+
+            document.getElementById("user-avatar").src = userCustomAvatar || "https://i.pravatar.cc/100";
+            document.getElementById("user-name-tag").textContent = user.displayName;
+            document.getElementById("side-user-avatar").src = userCustomAvatar || "https://i.pravatar.cc/100";
+            document.getElementById("side-user-name").textContent = user.displayName;
+            document.getElementById("side-user-bio").textContent = userCustomBio;
+
+            listenFeed();
+            listenChat();
+            listenPolls();
+            listenForCalls(); 
         }
 
-        // WebRTC ARAMA KISMI (Hata vermemesi için tamamlandı)
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                updateUI(user);
+            }
+        });
+
+        window.toggleProfileModal = function(show) {
+            const modal = document.getElementById("profile-modal");
+            if(show) {
+                document.getElementById("edit-avatar-url").value = userCustomAvatar;
+                document.getElementById("edit-bio").value = userCustomBio === "Henüz bir kozmik biyografi eklenmedi." ? "" : userCustomBio;
+                modal.style.display = "flex";
+            } else {
+                modal.style.display = "none";
+            }
+        };
+
+        window.saveProfile = async function() {
+            const newAvatar = document.getElementById("edit-avatar-url").value.trim();
+            const newBio = document.getElementById("edit-bio").value.trim();
+            try {
+                await setDoc(doc(db, "aura_users", currentUser.uid), {
+                    userPhoto: newAvatar || currentUser.photoURL,
+                    bio: newBio || "Henüz bir kozmik biyografi eklenmedi."
+                }, { merge: true });
+                userCustomAvatar = newAvatar || currentUser.photoURL;
+                userCustomBio = newBio || "Henüz bir kozmik biyografi eklenmedi.";
+                document.getElementById("user-avatar").src = userCustomAvatar;
+                document.getElementById("side-user-avatar").src = userCustomAvatar;
+                document.getElementById("side-user-bio").textContent = userCustomBio;
+                window.toggleProfileModal(false);
+                window.showToast("Profil güncellendi!", "success");
+            } catch(err) {
+                window.showToast("Profil güncellenirken hata oluştu.", "error");
+            }
+        };
+
+        window.switchTab = function(tab) {
+            ["feed", "chat", "canvas"].forEach(t => {
+                document.getElementById(`view-${t}`).style.display = "none";
+                document.getElementById(`btn-tab-${t}`).className = "w-full text-left px-4 py-3 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-900 transition";
+            });
+            document.getElementById(`view-${tab}`).style.display = tab === 'chat' ? 'flex' : 'block';
+            document.getElementById(`btn-tab-${tab}`).className = "w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 text-violet-400 border border-violet-500/20";
+        };
+
+        window.searchUserByEmail = async function() {
+            const email = document.getElementById("email-search-input").value.trim().toLowerCase();
+            const resContainer = document.getElementById("email-search-result");
+            if(!email) return;
+            
+            resContainer.innerHTML = `<span class="text-[10px] text-slate-400">Aranıyor...</span>`;
+            
+            try {
+                const q = query(collection(db, "aura_users"), where("email", "==", email));
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    resContainer.innerHTML = `<span class="text-rose-400 text-[10px] font-bold">Kullanıcı bulunamadı.</span>`;
+                } else {
+                    resContainer.innerHTML = "";
+                    querySnapshot.forEach((docSnap) => {
+                        const u = docSnap.data();
+                        const uid = docSnap.id;
+                        
+                        if (uid === currentUser.uid) {
+                            resContainer.innerHTML = `<span class="text-yellow-400 text-[10px]">Kendi kendinizi arayamazsınız.</span>`;
+                            return;
+                        }
+
+                        resContainer.innerHTML += `
+                            <div class="flex items-center justify-between bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 mt-2">
+                                <div class="flex items-center space-x-3">
+                                    <img src="${u.userPhoto}" class="w-8 h-8 rounded-full border border-slate-700">
+                                    <div class="flex flex-col">
+                                        <span class="text-[11px] font-bold text-slate-200">${u.userName}</span>
+                                        <span class="text-[9px] text-slate-400 truncate max-w-[100px]">${u.email}</span>
+                                    </div>
+                                </div>
+                                <button onclick="startVoiceCall('${uid}', '${u.userName}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 rounded-lg text-[9px] font-black transition flex items-center space-x-1">
+                                    <span>📞</span> <span>ARA</span>
+                                </button>
+                            </div>
+                        `;
+                    });
+                }
+            } catch (error) {
+                resContainer.innerHTML = `<span class="text-rose-400 text-[10px]">Arama hatası oluştu.</span>`;
+            }
+        };
+
+        // ==========================================
+        // YARIM KALAN VE EKSİK FONKSİYONLARIN TAMAMI
+        // ==========================================
+
         window.startVoiceCall = async function(targetUid, targetName) {
             window.showToast(`${targetName} aranıyor...`);
-            /*
-                Burada veritabanına offer oluşturulup kaydedilecek.
-                Mevcut kodun:
-                await set(activeCallRef, {
-                    callerId: currentUser.uid,
-                    callerName: currentUser.displayName,
-                    receiverId: targetUserUid,
-                    offer: { type: offer.type, sdp: offer.sdp },
-                    status: "ringing"
+            targetUserUid = targetUid;
+            
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                document.getElementById("local-audio").srcObject = localStream;
+            } catch (err) {
+                window.showToast("Mikrofon izni verilmedi!", "error");
+                return;
+            }
+
+            const callId = currentUser.uid + "_" + targetUserUid;
+            activeCallRef = ref(rtdb, "calls/" + callId);
+            peerConnection = new RTCPeerConnection(rtcConfig);
+            
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    push(ref(rtdb, `calls/${callId}/senderCandidates`), event.candidate.toJSON());
+                }
+            };
+
+            peerConnection.ontrack = (event) => {
+                document.getElementById("remote-audio").srcObject = event.streams[0];
+            };
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+
+            await set(activeCallRef, {
+                callerId: currentUser.uid,
+                callerName: currentUser.displayName,
+                targetId: targetUserUid,
+                offer: {
+                    type: offer.type,
+                    sdp: offer.sdp
+                },
+                status: "calling"
+            });
+
+            document.getElementById("active-call-panel").style.display = "flex";
+
+            onValue(activeCallRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.status === "answered" && data.answer) {
+                    const rtcSessionDescription = new RTCSessionDescription(data.answer);
+                    if (peerConnection.signalingState !== "stable") {
+                        peerConnection.setRemoteDescription(rtcSessionDescription);
+                    }
+                } else if (!data || data.status === "ended") {
+                    hangUpCall();
+                }
+            });
+
+            onChildAdded(ref(rtdb, `calls/${callId}/receiverCandidates`), (snapshot) => {
+                const candidate = new RTCIceCandidate(snapshot.val());
+                peerConnection.addIceCandidate(candidate);
+            });
+        };
+
+        window.listenForCalls = function() {
+            if(!currentUser) return;
+            const callsRef = ref(rtdb, "calls");
+            onValue(callsRef, (snapshot) => {
+                snapshot.forEach((childSnapshot) => {
+                    const data = childSnapshot.val();
+                    if (data.targetId === currentUser.uid && data.status === "calling") {
+                        activeCallRef = childSnapshot.ref;
+                        document.getElementById("caller-name-info").innerText = `${data.callerName} seni arıyor!`;
+                        document.getElementById("incoming-call-modal").style.display = "flex";
+                    }
                 });
-            */
-            console.log("Arama başlatıldı: " + targetUid);
+            });
+        };
+
+        window.acceptCall = async function() {
+            document.getElementById("incoming-call-modal").style.display = "none";
+            document.getElementById("active-call-panel").style.display = "flex";
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                document.getElementById("local-audio").srcObject = localStream;
+            } catch (err) {
+                window.showToast("Mikrofon izni gerekli!");
+                return;
+            }
+
+            peerConnection = new RTCPeerConnection(rtcConfig);
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    push(ref(rtdb, `${activeCallRef.key}/receiverCandidates`), event.candidate.toJSON());
+                }
+            };
+
+            peerConnection.ontrack = (event) => {
+                document.getElementById("remote-audio").srcObject = event.streams[0];
+            };
+
+            const callData = (await get(activeCallRef)).val();
+            const offerDescription = callData.offer;
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offerDescription));
+
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+
+            await update(activeCallRef, {
+                answer: { type: answer.type, sdp: answer.sdp },
+                status: "answered"
+            });
+
+            onChildAdded(ref(rtdb, `${activeCallRef.key}/senderCandidates`), (snapshot) => {
+                const candidate = new RTCIceCandidate(snapshot.val());
+                peerConnection.addIceCandidate(candidate);
+            });
+        };
+
+        window.rejectCall = function() {
+            if (activeCallRef) {
+                update(activeCallRef, { status: "ended" });
+            }
+            document.getElementById("incoming-call-modal").style.display = "none";
+        };
+
+        window.hangUpCall = function() {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            if (activeCallRef) {
+                remove(activeCallRef);
+                activeCallRef = null;
+            }
+            document.getElementById("active-call-panel").style.display = "none";
+            document.getElementById("incoming-call-modal").style.display = "none";
+            window.showToast("Çağrı sonlandırıldı.");
+        };
+
+        window.previewAndCompressImage = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                pendingImageData = e.target.result;
+                document.getElementById("upload-status").classList.remove("hidden");
+                window.showToast("Görsel hazır.");
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.createPost = async function() {
+            const content = document.getElementById("post-input").value;
+            if (!content && !pendingImageData) return;
+
+            try {
+                await addDoc(collection(db, "posts"), {
+                    author: currentUser.displayName,
+                    authorImg: userCustomAvatar,
+                    content: content,
+                    imgData: pendingImageData,
+                    timestamp: serverTimestamp()
+                });
+                document.getElementById("post-input").value = "";
+                pendingImageData = null;
+                document.getElementById("upload-status").classList.add("hidden");
+                window.showToast("Post başarıyla gönderildi!", "success");
+            } catch (err) {
+                window.showToast("Gönderilirken hata oluştu.", "error");
+            }
+        };
+
+        window.listenFeed = function() {
+            const q = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(20));
+            onSnapshot(q, (snapshot) => {
+                const feed = document.getElementById("feed-container");
+                feed.innerHTML = "";
+                snapshot.forEach((docSnap) => {
+                    const post = docSnap.data();
+                    let html = `
+                    <div class="glass-card rounded-2xl p-4 space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <img src="${post.authorImg}" class="w-8 h-8 rounded-full">
+                            <span class="text-xs font-bold text-slate-200">${post.author}</span>
+                        </div>
+                        <p class="text-xs text-slate-300">${post.content || ""}</p>
+                    `;
+                    if (post.imgData) {
+                        html += `<img src="${post.imgData}" class="w-full rounded-xl mt-2 border border-slate-800">`;
+                    }
+                    html += `</div>`;
+                    feed.innerHTML += html;
+                });
+            });
+        };
+
+        window.sendChat = async function(e) {
+            e.preventDefault();
+            const input = document.getElementById("chat-input");
+            if(!input.value.trim()) return;
+            try {
+                await addDoc(collection(db, "chats"), {
+                    author: currentUser.displayName,
+                    message: input.value,
+                    timestamp: serverTimestamp()
+                });
+                input.value = "";
+            } catch (err) {
+                window.showToast("Mesaj gitmedi.", "error");
+            }
+        };
+
+        window.listenChat = function() {
+            const q = query(collection(db, "chats"), orderBy("timestamp", "desc"), limit(30));
+            onSnapshot(q, (snapshot) => {
+                const chatContainer = document.getElementById("chat-container");
+                chatContainer.innerHTML = "";
+                let messages = [];
+                snapshot.forEach(docSnap => messages.push(docSnap.data()));
+                messages.reverse().forEach(msg => {
+                    chatContainer.innerHTML += `
+                        <div class="bg-slate-900/50 p-2 rounded-xl border border-slate-800">
+                            <span class="text-[10px] font-bold text-cyan-400">${msg.author}:</span>
+                            <span class="text-[11px] text-slate-200 ml-1">${msg.message}</span>
+                        </div>
+                    `;
+                });
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            });
+        };
+
+        window.shareCanvasAsImage = function() {
+            const dataUrl = canvas.toDataURL("image/png");
+            pendingImageData = dataUrl;
+            document.getElementById("post-input").value = "Tuvalden bir eser paylaşıldı 🎨";
+            createPost();
+        };
+
+        window.addNewPoll = async function() {
+            const title = document.getElementById("new-poll-title").value;
+            const opt1 = document.getElementById("new-poll-opt1").value;
+            const opt2 = document.getElementById("new-poll-opt2").value;
+            if(!title || !opt1 || !opt2) return window.showToast("Anket alanlarını doldur!", "error");
+            
+            await addDoc(collection(db, "polls"), {
+                title: title,
+                opt1: opt1,
+                opt2: opt2,
+                votes1: 0,
+                votes2: 0,
+                timestamp: serverTimestamp()
+            });
+            window.showToast("Anket başlatıldı!", "success");
+        };
+
+        window.listenPolls = function() {
+            const q = query(collection(db, "polls"), orderBy("timestamp", "desc"), limit(3));
+            onSnapshot(q, (snapshot) => {
+                const wrapper = document.getElementById("polls-list-wrapper");
+                wrapper.innerHTML = "";
+                snapshot.forEach(docSnap => {
+                    const poll = docSnap.data();
+                    const total = poll.votes1 + poll.votes2 || 1; 
+                    const p1 = Math.round((poll.votes1 / total) * 100);
+                    const p2 = Math.round((poll.votes2 / total) * 100);
+                    
+                    wrapper.innerHTML += `
+                        <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                            <h4 class="text-[11px] font-bold text-slate-200 mb-2">${poll.title}</h4>
+                            <div class="text-[9px] text-slate-400 mb-1">${poll.opt1} - %${p1} (${poll.votes1} oy)</div>
+                            <div class="w-full bg-slate-950 rounded-full h-1.5 mb-2"><div class="bg-cyan-500 h-1.5 rounded-full" style="width: ${p1}%"></div></div>
+                            <div class="text-[9px] text-slate-400 mb-1">${poll.opt2} - %${p2} (${poll.votes2} oy)</div>
+                            <div class="w-full bg-slate-950 rounded-full h-1.5"><div class="bg-violet-500 h-1.5 rounded-full" style="width: ${p2}%"></div></div>
+                        </div>
+                    `;
+                });
+            });
         };
 
     </script>
