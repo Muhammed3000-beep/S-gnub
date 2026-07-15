@@ -3,31 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gündem, Sohbet & Ünlüler</title>
+    <title>Neon Gündem & Sohbet</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Modern kaydırma çubuğu */
+        /* Özelleştirilmiş Neon Kaydırma Çubuğu */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #ddd6fe; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #8b5cf6; border-radius: 10px; }
+        
+        /* Arka plan neon parıltıları için ekstra animasyon */
+        .neon-glow {
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.15), 0 0 40px rgba(236, 72, 153, 0.1);
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-violet-50 via-slate-50 to-rose-50 text-slate-800 font-sans min-h-screen">
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen relative overflow-x-hidden">
     
-    <div class="max-w-md mx-auto min-h-screen flex flex-col bg-white/80 backdrop-blur-md shadow-2xl relative pb-16 border-x border-purple-100/50">
+    <div class="absolute top-[-10%] left-[-20%] w-[80%] h-[50%] bg-violet-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-[10%] right-[-20%] w-[80%] h-[50%] bg-rose-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <div class="max-w-md mx-auto min-h-screen flex flex-col bg-slate-900/40 backdrop-blur-xl shadow-2xl relative pb-16 border-x border-slate-800/60">
         
-        <header class="p-4 border-b border-purple-100/50 flex justify-between items-center bg-white/90 sticky top-0 z-20 backdrop-blur-md">
-            <h1 id="page-title" class="text-xl font-extrabold bg-gradient-to-r from-violet-600 to-rose-500 bg-clip-text text-transparent">✨ Gündem</h1>
+        <header class="p-4 border-b border-slate-800/80 flex justify-between items-center bg-slate-950/80 sticky top-0 z-20 backdrop-blur-md">
+            <h1 id="page-title" class="text-xl font-black bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent tracking-wide">✨ Gündem</h1>
             <div id="user-area"></div>
         </header>
 
-        <div id="login-screen" class="flex-1 flex flex-col items-center justify-center p-6 space-y-6">
-            <div class="text-7xl animate-bounce">🦄</div>
-            <div class="space-y-2 text-center">
-                <h2 class="text-3xl font-black text-slate-950 tracking-tight bg-gradient-to-r from-violet-600 to-rose-500 bg-clip-text text-transparent">Renklerin Dünyası</h2>
-                <p class="text-slate-500 text-sm px-6 leading-relaxed">Gündemi yakala, toplulukla anlık sohbet et ve yapay zeka karakterleriyle birebir konuşmaya başla.</p>
+        <div id="login-screen" class="flex-1 flex flex-col items-center justify-center p-6 space-y-8 relative z-10">
+            <div class="relative">
+                <div class="absolute inset-0 bg-violet-500 rounded-full blur-3xl opacity-30 animate-pulse"></div>
+                <div class="text-8xl relative filter drop-shadow-[0_0_15px_rgba(139,92,246,0.5)]">🌌</div>
             </div>
-            <button id="btn-login" class="w-full max-w-xs py-4 px-6 bg-gradient-to-r from-violet-600 to-rose-500 text-white rounded-full font-bold hover:opacity-90 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-purple-500/20 flex items-center justify-center space-x-2">
+            <div class="space-y-3 text-center">
+                <h2 class="text-3xl font-black tracking-tight bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">Siber Evrene Hoş Geldin</h2>
+                <p class="text-slate-400 text-sm px-6 leading-relaxed">Gündemi neon ışıklar altında yakala, toplulukla anlık konuş ve yapay zekayla sohbet et.</p>
+            </div>
+            <button id="btn-login" class="w-full max-w-xs py-4 px-6 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-600 text-white rounded-2xl font-bold hover:opacity-90 transition-all transform hover:scale-[1.03] active:scale-[0.97] shadow-lg shadow-violet-500/30 flex items-center justify-center space-x-2">
                 <span>Google ile Giriş Yap</span>
             </button>
         </div>
@@ -35,38 +46,38 @@
         <div id="app-screen" class="hidden flex-1 flex flex-col p-4 overflow-y-auto">
             
             <section id="tab-gundem" class="space-y-6">
-                <div class="bg-gradient-to-r from-violet-500/10 to-rose-500/10 p-4 rounded-3xl border border-purple-100">
-                    <textarea id="input-gundem" placeholder="Gündeme dair ne paylaşmak istersin?" class="w-full bg-transparent border-none focus:outline-none resize-none text-slate-800 text-sm placeholder-slate-400 font-medium" rows="2"></textarea>
+                <div class="bg-white/5 p-4 rounded-3xl border border-slate-800/80 neon-glow">
+                    <textarea id="input-gundem" placeholder="Gündeme dair ne paylaşmak istersin?" class="w-full bg-transparent border-none focus:outline-none resize-none text-slate-100 text-sm placeholder-slate-500 font-medium" rows="2"></textarea>
                     <div class="flex justify-end mt-2">
-                        <button id="btn-paylas" class="px-6 py-2 bg-gradient-to-r from-violet-600 to-rose-500 text-white rounded-full text-xs font-bold hover:opacity-90 transition shadow-md shadow-purple-500/10">Paylaş</button>
+                        <button id="btn-paylas" class="px-6 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-2xl text-xs font-bold hover:opacity-90 transition shadow-md shadow-violet-500/20">Paylaş</button>
                     </div>
                 </div>
                 <div class="space-y-4">
-                    <h3 class="font-extrabold text-xs uppercase tracking-wider text-purple-400/80">Canlı Akış</h3>
+                    <h3 class="font-extrabold text-xs uppercase tracking-wider text-slate-500">Canlı Akış</h3>
                     <div id="gundem-listesi" class="space-y-3"></div>
                 </div>
             </section>
 
             <section id="tab-chat" class="hidden flex flex-col h-[70vh]">
                 <div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 pr-1 mb-4 flex flex-col"></div>
-                <div class="flex items-center space-x-2 bg-slate-100/80 p-2 rounded-full border border-purple-100/50 backdrop-blur-sm">
-                    <input type="text" id="input-chat" placeholder="Bir mesaj yaz..." class="flex-1 bg-transparent border-none focus:outline-none px-4 text-sm text-slate-800 placeholder-slate-400" />
-                    <button id="btn-send-chat" class="p-3 bg-gradient-to-r from-violet-600 to-rose-500 text-white rounded-full hover:opacity-90 transition shadow-md">
+                <div class="flex items-center space-x-2 bg-white/5 p-2 rounded-2xl border border-slate-800/80 backdrop-blur-md">
+                    <input type="text" id="input-chat" placeholder="Bir mesaj yaz..." class="flex-1 bg-transparent border-none focus:outline-none px-4 text-sm text-slate-100 placeholder-slate-500" />
+                    <button id="btn-send-chat" class="p-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl hover:opacity-90 transition shadow-md">
                         <svg class="w-4 h-4 transform rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                     </button>
                 </div>
             </section>
 
             <section id="tab-unluler" class="hidden flex flex-col h-[70vh]">
-                <div class="flex space-x-2 overflow-x-auto pb-3 mb-3 border-b border-purple-50">
-                    <button class="celebrity-btn px-5 py-2 rounded-full text-xs font-bold transition-all duration-300" data-cel="elon" id="btn-celeb-elon">Elon Musk</button>
-                    <button class="celebrity-btn px-5 py-2 rounded-full text-xs font-bold transition-all duration-300" data-cel="einstein" id="btn-celeb-einstein">Einstein</button>
-                    <button class="celebrity-btn px-5 py-2 rounded-full text-xs font-bold transition-all duration-300" data-cel="shakespeare" id="btn-celeb-shakespeare">Shakespeare</button>
+                <div class="flex space-x-2 overflow-x-auto pb-3 mb-3 border-b border-slate-800/60">
+                    <button class="celebrity-btn px-5 py-2 rounded-2xl text-xs font-bold transition-all duration-300" data-cel="elon" id="btn-celeb-elon">Elon Musk</button>
+                    <button class="celebrity-btn px-5 py-2 rounded-2xl text-xs font-bold transition-all duration-300" data-cel="einstein" id="btn-celeb-einstein">Einstein</button>
+                    <button class="celebrity-btn px-5 py-2 rounded-2xl text-xs font-bold transition-all duration-300" data-cel="shakespeare" id="btn-celeb-shakespeare">Shakespeare</button>
                 </div>
                 <div id="ai-messages" class="flex-1 overflow-y-auto space-y-3 pr-1 mb-4 flex flex-col"></div>
-                <div class="flex items-center space-x-2 bg-slate-100/80 p-2 rounded-full border border-purple-100/50 backdrop-blur-sm">
-                    <input type="text" id="input-ai" placeholder="Ünlüye sorunu sor..." class="flex-1 bg-transparent border-none focus:outline-none px-4 text-sm text-slate-800 placeholder-slate-400" />
-                    <button id="btn-send-ai" class="p-3 bg-gradient-to-r from-violet-600 to-rose-500 text-white rounded-full hover:opacity-90 transition shadow-md">
+                <div class="flex items-center space-x-2 bg-white/5 p-2 rounded-2xl border border-slate-800/80 backdrop-blur-md">
+                    <input type="text" id="input-ai" placeholder="Ünlüye sorunu sor..." class="flex-1 bg-transparent border-none focus:outline-none px-4 text-sm text-slate-100 placeholder-slate-500" />
+                    <button id="btn-send-ai" class="p-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl hover:opacity-90 transition shadow-md">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     </button>
                 </div>
@@ -74,16 +85,16 @@
 
         </div>
 
-        <nav id="bottom-nav" class="hidden fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 border-t border-purple-50/80 flex justify-around items-center h-16 z-20 backdrop-blur-md">
-            <button class="nav-item flex flex-col items-center space-y-1 text-violet-600 w-full py-2 transition" data-tab="gundem">
-                <span class="text-xl">✨</span>
+        <nav id="bottom-nav" class="hidden fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-950/90 border-t border-slate-900/80 flex justify-around items-center h-16 z-20 backdrop-blur-md">
+            <button class="nav-item flex flex-col items-center space-y-1 text-violet-400 w-full py-2 transition" data-tab="gundem">
+                <span class="text-xl filter drop-shadow-[0_0_8px_rgba(139,92,246,0.4)]">✨</span>
                 <span class="text-[10px] font-bold">Gündem</span>
             </button>
-            <button class="nav-item flex flex-col items-center space-y-1 text-slate-400 hover:text-violet-600 w-full py-2 transition" data-tab="chat">
+            <button class="nav-item flex flex-col items-center space-y-1 text-slate-500 hover:text-violet-400 w-full py-2 transition" data-tab="chat">
                 <span class="text-xl">💬</span>
                 <span class="text-[10px] font-bold">Sohbet</span>
             </button>
-            <button class="nav-item flex flex-col items-center space-y-1 text-slate-400 hover:text-violet-600 w-full py-2 transition" data-tab="unluler">
+            <button class="nav-item flex flex-col items-center space-y-1 text-slate-500 hover:text-violet-400 w-full py-2 transition" data-tab="unluler">
                 <span class="text-xl">🎭</span>
                 <span class="text-[10px] font-bold">Ünlüler</span>
             </button>
@@ -131,9 +142,9 @@
                 
                 // Aktif buton rengi
                 document.querySelectorAll(".nav-item").forEach(btn => {
-                    btn.classList.replace("text-violet-600", "text-slate-400");
+                    btn.classList.replace("text-violet-400", "text-slate-500");
                 });
-                button.classList.replace("text-slate-400", "text-violet-600");
+                button.classList.replace("text-slate-500", "text-violet-400");
 
                 // Sekmeleri Aç/Kapa
                 Object.keys(tabs).forEach(key => {
@@ -168,8 +179,8 @@
 
                 userArea.innerHTML = `
                     <div class="flex items-center space-x-2">
-                        <img src="${user.photoURL}" class="w-8 h-8 rounded-full border-2 border-violet-500 shadow-sm" />
-                        <button id="btn-logout" class="text-xs text-rose-500 font-bold hover:underline">Çıkış</button>
+                        <img src="${user.photoURL}" class="w-8 h-8 rounded-full border-2 border-violet-500 shadow-lg" />
+                        <button id="btn-logout" class="text-xs text-rose-400 font-bold hover:underline">Çıkış</button>
                     </div>
                 `;
                 document.getElementById("btn-logout").addEventListener("click", () => signOut(auth));
@@ -210,12 +221,12 @@
                 snapshot.forEach(doc => {
                     const post = doc.data();
                     const el = document.createElement("div");
-                    el.className = "p-4 bg-white/90 backdrop-blur-sm rounded-2xl border border-purple-50/50 flex space-x-3 shadow-sm hover:shadow-md transition duration-200";
+                    el.className = "p-4 bg-white/5 backdrop-blur-md rounded-2xl border border-slate-800/80 flex space-x-3 shadow-sm hover:border-slate-700/80 transition duration-300";
                     el.innerHTML = `
-                        <img src="${post.userPhoto}" class="w-9 h-9 rounded-full shadow-sm" />
+                        <img src="${post.userPhoto}" class="w-9 h-9 rounded-full border border-slate-700 shadow-sm" />
                         <div>
-                            <h4 class="font-extrabold text-xs text-slate-900">${post.userName}</h4>
-                            <p class="text-slate-600 text-sm mt-1 leading-relaxed font-medium">${post.content}</p>
+                            <h4 class="font-extrabold text-xs text-slate-200">${post.userName}</h4>
+                            <p class="text-slate-300 text-sm mt-1 leading-relaxed font-medium">${post.content}</p>
                         </div>
                     `;
                     gundemListesi.appendChild(el);
@@ -256,9 +267,9 @@
                     el.className = `flex ${isMe ? 'justify-end' : 'justify-start'} w-full`;
                     el.innerHTML = `
                         <div class="flex items-end space-x-2 ${isMe ? 'flex-row-reverse space-x-reverse' : ''} max-w-[85%]">
-                            <img src="${msg.userPhoto || 'https://via.placeholder.com/30'}" class="w-7 h-7 rounded-full shadow-sm" />
-                            <div class="p-3.5 rounded-2xl text-sm shadow-sm ${isMe ? 'bg-gradient-to-br from-violet-600 to-rose-500 text-white rounded-br-none' : 'bg-white border border-purple-50 text-slate-800 rounded-bl-none'}">
-                                <span class="block font-black text-[9px] uppercase tracking-wider opacity-80 mb-0.5 ${isMe ? 'text-white' : 'text-violet-500'}">${msg.userName}</span>
+                            <img src="${msg.userPhoto || 'https://via.placeholder.com/30'}" class="w-7 h-7 rounded-full border border-slate-800 shadow-sm" />
+                            <div class="p-3.5 rounded-2xl text-sm shadow-lg ${isMe ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-br-none' : 'bg-white/5 border border-slate-800/80 text-slate-100 rounded-bl-none'}">
+                                <span class="block font-black text-[9px] uppercase tracking-wider opacity-80 mb-0.5 ${isMe ? 'text-violet-200' : 'text-fuchsia-400'}">${msg.userName}</span>
                                 <p class="leading-snug font-medium">${msg.message}</p>
                             </div>
                         </div>
@@ -272,9 +283,9 @@
         // 3. GELİŞMİŞ "KARAKTER MOTORLU" ÜNLÜLER SİSTEMİ
         let activeCeleb = "elon";
         const celebDetails = {
-            elon: { name: "Elon Musk", color: "bg-blue-600", text: "text-blue-900", bg: "bg-blue-50/60", border: "border-blue-100" },
-            einstein: { name: "Albert Einstein", color: "bg-amber-600", text: "text-amber-900", bg: "bg-amber-50/60", border: "border-amber-100" },
-            shakespeare: { name: "W. Shakespeare", color: "bg-emerald-600", text: "text-emerald-900", bg: "bg-emerald-50/60", border: "border-emerald-100" }
+            elon: { name: "Elon Musk", color: "from-blue-600/20 to-cyan-600/20", text: "text-blue-100", border: "border-blue-500/30", titleColor: "text-blue-400" },
+            einstein: { name: "Albert Einstein", color: "from-amber-600/20 to-yellow-600/20", text: "text-amber-100", border: "border-amber-500/30", titleColor: "text-amber-400" },
+            shakespeare: { name: "W. Shakespeare", color: "from-emerald-600/20 to-teal-600/20", text: "text-emerald-100", border: "border-emerald-500/30", titleColor: "text-emerald-400" }
         };
 
         const celebEngine = {
@@ -295,7 +306,7 @@
             einstein: {
                 welcome: "Doğa kanunları üzerine felsefe yapmaya hazır mısın evlat? Zaman görelidir! 🧠",
                 keywords: {
-                    "zaman": "Zaman, sadece bir illüzyondan ibarettir. Geçmiş, şimdi ve gelecek aynı anda var olur.",
+                    "zaman": "Zaman, sadece bir illüzyondan ibarettir. Geçmiş, şimdi ve gelecek aynı onda var olur.",
                     "fizik": "Fizik, Tanrı'nın evreni yaratırken kullandığı kuralları anlama çabasıdır.",
                     "formül": "E = mc² formülü kütle ile enerjinin aslında aynı şey olduğunu söyler.",
                     "zeka": "Zeki olmanın ölçüsü, gerektiğinde düşüncelerini değiştirebilme yeteneğidir."
@@ -327,21 +338,21 @@
             
             document.querySelectorAll(".celebrity-btn").forEach(btn => {
                 const isTarget = btn.getAttribute("data-cel") === celebKey;
-                const activeClasses = "bg-gradient-to-r from-violet-600 to-rose-500 text-white shadow-md shadow-purple-500/10 scale-105";
-                const inactiveClasses = "bg-white text-slate-500 border border-purple-100 hover:bg-slate-50 hover:text-slate-700";
+                const activeClasses = "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20 scale-105 border-transparent";
+                const inactiveClasses = "bg-white/5 text-slate-400 border border-slate-800/80 hover:bg-white/10 hover:text-slate-200";
                 
                 if (isTarget) {
-                    btn.className = `celebrity-btn px-5 py-2 rounded-full text-xs font-bold transition-all duration-300 ${activeClasses}`;
+                    btn.className = `celebrity-btn px-5 py-2 rounded-2xl text-xs font-bold transition-all duration-300 ${activeClasses}`;
                 } else {
-                    btn.className = `celebrity-btn px-5 py-2 rounded-full text-xs font-bold transition-all duration-300 ${inactiveClasses}`;
+                    btn.className = `celebrity-btn px-5 py-2 rounded-2xl text-xs font-bold transition-all duration-300 ${inactiveClasses}`;
                 }
             });
 
             const details = celebDetails[celebKey];
             const engine = celebEngine[celebKey];
             document.getElementById("ai-messages").innerHTML = `
-                <div class="${details.bg} ${details.border} border p-4 rounded-2xl text-sm ${details.text} max-w-[85%] rounded-bl-none shadow-sm backdrop-blur-sm">
-                    <strong class="block text-[9px] uppercase tracking-wider mb-1.5 opacity-70 font-black text-violet-600">${details.name}</strong>
+                <div class="bg-gradient-to-br ${details.color} ${details.border} border p-4 rounded-2xl text-sm ${details.text} max-w-[85%] rounded-bl-none shadow-lg backdrop-blur-md">
+                    <strong class="block text-[9px] uppercase tracking-wider mb-1.5 font-black ${details.titleColor}">${details.name}</strong>
                     <p class="leading-relaxed font-semibold">${engine.welcome}</p>
                 </div>
             `;
@@ -364,7 +375,7 @@
             const userMsg = document.createElement("div");
             userMsg.className = "flex justify-end w-full";
             userMsg.innerHTML = `
-                <div class="p-3.5 bg-gradient-to-br from-violet-600 to-rose-500 text-white rounded-2xl text-sm max-w-[85%] rounded-br-none shadow-md font-semibold">
+                <div class="p-3.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-2xl text-sm max-w-[85%] rounded-br-none shadow-lg font-semibold">
                     ${userText}
                 </div>
             `;
@@ -395,8 +406,8 @@
                 const aiMsg = document.createElement("div");
                 aiMsg.className = "flex justify-start w-full";
                 aiMsg.innerHTML = `
-                    <div class="${details.bg} ${details.border} border p-4 rounded-2xl text-sm ${details.text} max-w-[85%] rounded-bl-none shadow-sm backdrop-blur-sm">
-                        <strong class="block text-[9px] uppercase tracking-wider mb-1.5 opacity-70 font-black text-violet-600">${details.name}</strong>
+                    <div class="bg-gradient-to-br ${details.color} ${details.border} border p-4 rounded-2xl text-sm ${details.text} max-w-[85%] rounded-bl-none shadow-lg backdrop-blur-md">
+                        <strong class="block text-[9px] uppercase tracking-wider mb-1.5 font-black ${details.titleColor}">${details.name}</strong>
                         <p class="leading-relaxed font-semibold">${reply}</p>
                     </div>
                 `;
