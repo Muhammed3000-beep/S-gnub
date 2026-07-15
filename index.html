@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kozmik Fısıltı Paneli</title>
+    <title>Kozmik Fısıltı & Skor Paneli</title>
     <style>
         :root {
             --bg-color: #0b0b0e;
@@ -14,6 +14,7 @@
             --accent-color: #00e676;
             --border-color: #202024;
             --text-muted: #7c7c8a;
+            --gold: #ffd700;
         }
 
         body {
@@ -30,10 +31,10 @@
 
         .grid-layout {
             display: grid;
-            grid-template-columns: 280px 1fr;
+            grid-template-columns: 300px 1fr;
             gap: 20px;
             width: 100%;
-            max-width: 1000px;
+            max-width: 1100px;
         }
 
         /* Kart Yapısı */
@@ -48,7 +49,6 @@
         /* Profil Kartı */
         .profile-card {
             text-align: center;
-            margin-bottom: 20px;
         }
 
         .profile-img {
@@ -88,8 +88,8 @@
             border: 1px solid #29292e;
         }
 
-        /* İçerik Filtresi (Sol Menü) */
-        .filter-title {
+        /* Başlıklar */
+        .section-title {
             font-size: 0.9rem;
             color: var(--text-muted);
             text-transform: uppercase;
@@ -98,6 +98,7 @@
             font-weight: bold;
         }
 
+        /* Trend Etiketler */
         .tags-container {
             display: flex;
             flex-wrap: wrap;
@@ -120,22 +121,37 @@
             color: var(--primary-color);
         }
 
-        /* Orta Bölüm */
+        /* Liderlik Tablosu */
+        .leaderboard {
+            background-color: #0b0b0e;
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .leaderboard-row {
+            display: grid;
+            grid-template-columns: 40px 1fr 60px;
+            padding: 8px 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.9rem;
+            align-items: center;
+        }
+
+        .leaderboard-row:last-child {
+            border-bottom: none;
+        }
+
+        /* Sağ/Orta Panel */
         .main-content {
             display: flex;
             flex-direction: column;
             gap: 20px;
         }
 
-        /* Günün Modu Butonları */
+        /* Günün Modu */
         .mode-section {
             background: linear-gradient(135deg, #16161c, #121216);
-        }
-
-        .mode-title {
-            font-size: 1rem;
-            font-weight: bold;
-            margin-bottom: 12px;
         }
 
         .mode-buttons {
@@ -161,18 +177,13 @@
         .mode-btn:hover {
             transform: translateY(-2px);
             border-color: var(--primary-color);
-            background: #1c1c22;
         }
 
-        /* Fısıltı Yazma Alanı */
+        /* Fısıltı Kutusu */
         .whisper-box {
             display: flex;
             flex-direction: column;
             gap: 12px;
-        }
-
-        .textarea-wrapper {
-            position: relative;
         }
 
         textarea {
@@ -236,14 +247,6 @@
         }
 
         /* Fısıltı Akışı */
-        .feed-title {
-            font-size: 1.1rem;
-            font-weight: bold;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-
         .whisper-list {
             display: flex;
             flex-direction: column;
@@ -271,6 +274,7 @@
 <div class="grid-layout">
     
     <div style="display: flex; flex-direction: column; gap: 20px;">
+        
         <div class="card profile-card">
             <div class="profile-img">🛸</div>
             <div class="profile-name">Kozmik Gezgin</div>
@@ -278,17 +282,42 @@
             
             <div class="badges">
                 <div class="badge">💨 Yeni Fısıldayan</div>
-                <div class="badge">🎤 Lider</div>
+                <div class="badge">👑 Lider</div>
             </div>
         </div>
 
         <div class="card">
-            <div class="filter-title">Trend Etiketler</div>
+            <div class="section-title">Trend Etiketler</div>
             <div class="tags-container">
                 <span class="tag" onclick="insertTag('#YKS2026')">#YKS2026</span>
                 <span class="tag" onclick="insertTag('#KahveMolası')">#KahveMolası</span>
                 <span class="tag" onclick="insertTag('#GececilereSelam')">#GececilereSelam</span>
-                <span class="tag" onclick="insertTag('#SınavStresi')">#SınavStresi</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">🏆 Haftalık Liderler</div>
+            <div class="leaderboard">
+                <div class="leaderboard-row" style="font-weight: bold; color: var(--text-muted);">
+                    <div>Sıra</div>
+                    <div>Oyuncu</div>
+                    <div>Skor</div>
+                </div>
+                <div class="leaderboard-row">
+                    <div style="color: var(--gold);">🥇</div>
+                    <div>@ay_tozu</div>
+                    <div style="color: var(--accent-color); font-weight: bold;">940</div>
+                </div>
+                <div class="leaderboard-row">
+                    <div style="color: #c0c0c0;">🥈</div>
+                    <div>@gezgin101</div>
+                    <div style="color: var(--accent-color); font-weight: bold;">820</div>
+                </div>
+                <div class="leaderboard-row">
+                    <div style="color: #cd7f32;">🥉</div>
+                    <div>@nebula_x</div>
+                    <div style="color: var(--accent-color); font-weight: bold;">710</div>
+                </div>
             </div>
         </div>
     </div>
@@ -296,7 +325,7 @@
     <div class="main-content">
         
         <div class="card mode-section">
-            <div class="mode-title">Bugün Nasıl Hissediyorsun?</div>
+            <div class="section-title" style="color: #fff;">Bugün Nasıl Hissediyorsun?</div>
             <div class="mode-buttons">
                 <button class="mode-btn" onclick="selectMood('😎 (Harika)')">😎 Harika</button>
                 <button class="mode-btn" onclick="selectMood('😴 (Uykulu)')">😴 Uykulu</button>
@@ -307,9 +336,7 @@
         </div>
 
         <div class="card whisper-box">
-            <div class="textarea-wrapper">
-                <textarea id="whisperText" placeholder="İçinden geçenleri evrene fısılda..."></textarea>
-            </div>
+            <textarea id="whisperText" placeholder="İçinden geçenleri evrene fısılda..."></textarea>
             <div class="action-bar">
                 <button class="random-btn" onclick="generateRandomWhisper()">🎲 Rastgele Şans</button>
                 <button class="send-btn" onclick="publishWhisper()">Fısılda</button>
@@ -317,13 +344,13 @@
         </div>
 
         <div class="card">
-            <div class="feed-title">Uzay Boşluğundaki Fısıltılar</div>
+            <div class="section-title" style="color: #fff; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Uzay Boşluğundaki Fısıltılar</div>
             <div class="whisper-list" id="whisperFeed">
                 <div class="whisper-item">
                     <strong>@gezgin101:</strong> Dershanem şu an 📚 (Ders Çalışıyor) modunda! #YKS2026
                 </div>
                 <div class="whisper-item">
-                    <strong>@kozmik_ruh:</strong> Günün en zor dersi kesinlikle Matematik idi. Biri bana acilen kahve ısmarlasın! #KahveMolası
+                    <strong>@ay_tozu:</strong> Gece ders çalışırken kahve içmeyi unutanlar kulübü kuruyorum... ☕ #GececilereSelam
                 </div>
             </div>
         </div>
@@ -335,7 +362,7 @@
     const whisperText = document.getElementById('whisperText');
     const whisperFeed = document.getElementById('whisperFeed');
 
-    // 1. Günün Modu Seçimi
+    // 1. Günün Modunu Seçme
     function selectMood(mood) {
         whisperText.value = `Dershanem şu an ${mood} modunda! `;
         whisperText.focus();
@@ -347,12 +374,11 @@
         whisperText.focus();
     }
 
-    // 3. Rastgele Fısıltı Dünyası (Zar Butonu)
+    // 3. Rastgele Fısıltı Üretici (Zar)
     const templates = [
         "Şu an arka planda çalan şarkı: ______ 🎵",
         "Günün en zor dersi kesinlikle ______ idi. 🤯",
         "Biri bana acilen kahve ısmarlasın! ☕",
-        "Uyumak varken neden buradayım bilmiyorum... 😴",
         "Bugün her şeyi halledecek o motivasyon geldi! 💪"
     ];
 
@@ -362,23 +388,19 @@
         whisperText.focus();
     }
 
-    // 4. Fısıltıyı Akışa Gönderme
+    // 4. Fısıltıyı Gönderme
     function publishWhisper() {
         const content = whisperText.value.trim();
         if (content === "") {
-            alert("Lütfen fısıldamak için bir şeyler yazın!");
+            alert("Boş fısıltı gönderilemez!");
             return;
         }
 
-        // Yeni fısıltı elemanı oluştur
         const newItem = document.createElement('div');
         newItem.className = 'whisper-item';
         newItem.innerHTML = `<strong>@gezgin101:</strong> ${content}`;
 
-        // Listenin en üstüne ekle
         whisperFeed.insertBefore(newItem, whisperFeed.firstChild);
-
-        // Inputu temizle
         whisperText.value = "";
     }
 </script>
