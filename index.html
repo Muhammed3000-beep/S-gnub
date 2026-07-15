@@ -165,10 +165,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, updateDoc, increment } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, updateDoc, increment, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
         import { getDatabase, ref, push, set, onChildAdded } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
-        // Senin verdiğin güncel ve yepyeni Firebase Config Bilgilerin
         const firebaseConfig = {
             apiKey: "AIzaSyDXpYmC0IzpOpwGMkgswBDlo6h5aOlSUEU",
             authDomain: "auraultrax-4c3d4.firebaseapp.com",
@@ -181,13 +180,12 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const rtdb = getDatabase(app); // Realtime Database Aktifleşti!
+        const rtdb = getDatabase(app); 
         const provider = new GoogleAuthProvider();
 
         let currentUser = null;
         let selectedColor = "#ef4444";
 
-        // HTML5 Canvas Tanımları
         const canvas = document.getElementById("real-canvas");
         const ctx = canvas.getContext("2d");
         const pixelSize = 16; 
@@ -217,7 +215,6 @@
             initCanvas();
         };
 
-        // GÖRSELLEŞTİRME VE AKIŞTA YAYINLAMA MOTORU (PNG EXPORT - BASE64)
         window.shareCanvasAsImage = async function() {
             try {
                 const imageUrl = canvas.toDataURL("image/png");
@@ -228,6 +225,7 @@
                     userPhoto: currentUser.photoURL,
                     content: "🎨 Tuvalimde yepyeni bir şaheser tasarladım!",
                     sharedImage: imageUrl,
+                    replies: [],
                     createdAt: serverTimestamp()
                 });
 
@@ -238,7 +236,6 @@
             }
         };
 
-        // TOAST PANELİ
         window.showToast = function(message, type = "info") {
             const container = document.getElementById("toast-container");
             const toast = document.createElement("div");
@@ -250,7 +247,6 @@
             setTimeout(() => toast.remove(), 3500);
         };
 
-        // GOOGLE GİRİŞ SİSTEMİ
         window.googleLogin = function() {
             signInWithPopup(auth, provider)
                 .then((result) => {
@@ -271,7 +267,6 @@
             });
         };
 
-        // OTURUM DURUM TAKİBİ
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
@@ -282,14 +277,18 @@
                 document.getElementById("user-avatar").src = user.photoURL || "https://i.pravatar.cc/100";
                 document.getElementById("user-name-tag").textContent = user.displayName;
                 
-                // Canlı Veri Akışlarını Başlatıyoruz
+                // Kullanıcı kaydını arkadaşlık sistemi altyapısı için Firestore'a eşliyoruz
+                setDoc(doc(db, "aura_users", user.uid), {
+                    userName: user.displayName,
+                    userPhoto: user.photoURL
+                }, { merge: true });
+
                 listenFeed();
                 listenChat();
                 listenPolls();
             }
         });
 
-        // SEKME YÖNETİMİ
         window.switchTab = function(tab) {
             ["feed", "chat", "canvas"].forEach(t => {
                 document.getElementById(`view-${t}`).classList.add("hidden");
@@ -299,7 +298,7 @@
             document.getElementById(`btn-tab-${tab}`).className = "w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 text-violet-400 border border-violet-500/20";
         };
 
-        // KOZMİK AKIŞ (FIRESTORE)
+        // GÖNDERİ OLUŞTURMA
         window.createPost = async function() {
             const val = document.getElementById("post-input").value.trim();
             if(!val) return;
@@ -309,19 +308,75 @@
                 userName: currentUser.displayName,
                 userPhoto: currentUser.photoURL,
                 content: val,
+                replies: [], // Yanıtlar dizisi altyapısı
                 createdAt: serverTimestamp()
             });
             document.getElementById("post-input").value = "";
             window.showToast("Gönderi akışa fırlatıldı!");
         };
 
+        // GÖNDERİ SİLME FONKSİYONU
+        window.deletePost = async function(postId) {
+            if(confirm("Bu gönderiyi kozmik boşluğa göndermek istediğinden emin misin?")) {
+                try {
+                    await deleteDoc(doc(db, "aura_ultra_posts", postId));
+                    window.showToast("Gönderi silindi.", "success");
+                } catch (err) {
+                    window.showToast("Silme işlemi başarısız.", "error");
+                }
+            }
+        };
+
+        // GÖNDERİYE YANIT VERME (YORUM) FONKSİYONU
+        window.replyToPost = async function(postId) {
+            const replyInput = document.getElementById(`reply-in-${postId}`);
+            const replyText = replyInput.value.trim();
+            if(!replyText) return;
+
+            try {
+                const postRef = doc(db, "aura_ultra_posts", postId);
+                await updateDoc(postRef, {
+                    replies: arrayUnion({
+                        uid: currentUser.uid,
+                        userName: currentUser.displayName,
+                        content: replyText,
+                        timestamp: Date.now()
+                    })
+                });
+                replyInput.value = "";
+                window.showToast("Yanıtınız başarıyla iletildi!", "success");
+            } catch (err) {
+                window.showToast("Yanıt gönderilemedi.", "error");
+            }
+        };
+
+        // ARKADAŞ EKLEME FONKSİYONU
+        window.addFriend = async function(targetUid, targetName) {
+            if(targetUid === currentUser.uid) {
+                window.showToast("Kendinle zaten en yakın arkadaşsın! 🌌");
+                return;
+            }
+            try {
+                const userFriendRef = collection(db, "aura_users", currentUser.uid, "friends");
+                await setDoc(doc(userFriendRef, targetUid), {
+                    friendName: targetName,
+                    addedAt: Date.now()
+                });
+                window.showToast(`${targetName} arkadaş olarak eklendi! 👥`, "success");
+            } catch (err) {
+                window.showToast("Arkadaş ekleme başarısız.", "error");
+            }
+        };
+
+        // KOZMİK AKIŞI DİNLEME VE ARAYÜZ OLUŞTURMA
         function listenFeed() {
             const q = query(collection(db, "aura_ultra_posts"), orderBy("createdAt", "desc"), limit(25));
             onSnapshot(q, (snapshot) => {
                 const container = document.getElementById("feed-container");
                 container.innerHTML = "";
-                snapshot.forEach(doc => {
-                    const p = doc.data();
+                snapshot.forEach(docSnap => {
+                    const p = docSnap.data();
+                    const postId = docSnap.id;
                     const el = document.createElement("div");
                     el.className = "glass-card rounded-2xl p-4 space-y-3.5 border border-slate-800 hover:border-slate-700/50 transition";
                     
@@ -330,25 +385,61 @@
                         imgHtml = `<img src="${p.sharedImage}" class="max-w-[200px] w-full rounded-xl border border-slate-800 shadow-inner mt-2">`;
                     }
 
+                    // Silme Butonu Kontrolü (Yalnızca gönderi sahibine görünür)
+                    let deleteBtnHtml = "";
+                    if(currentUser && p.uid === currentUser.uid) {
+                        deleteBtnHtml = `<button onclick="deletePost('${postId}')" class="text-[10px] bg-rose-950/40 text-rose-400 hover:bg-rose-900/50 px-2.5 py-1 rounded-lg font-bold transition">Sil 🗑️</button>`;
+                    }
+
+                    // Arkadaş Ekle Butonu Kontrolü (Başkalarına ait gönderilerde çıkar)
+                    let addFriendBtnHtml = "";
+                    if(currentUser && p.uid !== currentUser.uid) {
+                        addFriendBtnHtml = `<button onclick="addFriend('${p.uid}', '${p.userName}')" class="text-[9px] bg-cyan-950/80 text-cyan-300 hover:bg-cyan-900 px-2 py-0.5 rounded border border-cyan-500/20 font-medium ml-2">👥 Ekle</button>`;
+                    }
+
+                    // Yanıtları/Yorumları Listeleme Motoru
+                    let repliesHtml = "";
+                    if(p.replies && p.replies.length > 0) {
+                        repliesHtml = `<div class="mt-3 pt-3 border-t border-slate-900 space-y-2 bg-slate-950/30 p-2 rounded-xl">`;
+                        p.replies.forEach(r => {
+                            repliesHtml += `
+                                <div class="text-[11px] leading-relaxed text-slate-400">
+                                    <span class="font-extrabold text-slate-200">${r.userName}:</span> ${r.content}
+                                </div>
+                            `;
+                        });
+                        repliesHtml += `</div>`;
+                    }
+
                     el.innerHTML = `
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">
                                 <img src="${p.userPhoto || 'https://i.pravatar.cc/100'}" class="w-8 h-8 rounded-full border border-slate-800">
                                 <div>
-                                    <span class="font-bold text-xs text-slate-200 block">${p.userName}</span>
+                                    <div class="flex items-center">
+                                        <span class="font-bold text-xs text-slate-200 block">${p.userName}</span>
+                                        ${addFriendBtnHtml}
+                                    </div>
                                     <span class="text-[8px] text-violet-400 font-extrabold uppercase tracking-widest block">Aura Node</span>
                                 </div>
                             </div>
+                            ${deleteBtnHtml}
                         </div>
                         <p class="text-xs text-slate-300 leading-relaxed break-words">${p.content}</p>
                         ${imgHtml}
+                        
+                        ${repliesHtml}
+
+                        <div class="flex items-center space-x-2 mt-2 pt-2 border-t border-slate-900/50">
+                            <input type="text" id="reply-in-${postId}" placeholder="Bu düğüme yanıt ver..." class="flex-1 bg-slate-950 border border-slate-900 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 focus:outline-none">
+                            <button onclick="replyToPost('${postId}')" class="px-3 py-1.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-lg text-[10px] font-bold text-white">Yanıtla</button>
+                        </div>
                     `;
                     container.appendChild(el);
                 });
             });
         }
 
-        // GERÇEK ZAMANLI LOBİ CHAT MOTORU (REALTIME DATABASE ENTEGRESİ)
         window.sendChat = function(e) {
             e.preventDefault();
             const input = document.getElementById("chat-input");
@@ -369,7 +460,7 @@
         function listenChat() {
             const chatRef = ref(rtdb, "messages");
             const container = document.getElementById("chat-container");
-            container.innerHTML = ""; // Temizle
+            container.innerHTML = ""; 
 
             onChildAdded(chatRef, (snapshot) => {
                 const msg = snapshot.val();
@@ -387,7 +478,6 @@
             });
         }
 
-        // KOZMİK ARAMA MOTORU (CANLI FİLTRELEME)
         window.searchNetwork = function() {
             const queryVal = document.getElementById("search-input").value.toLowerCase().trim();
             const container = document.getElementById("feed-container");
@@ -408,7 +498,6 @@
             }
         };
 
-        // KÜRESEL ANKET SİSTEMİ (FIRESTORE)
         window.addNewPoll = async function() {
             const q = document.getElementById("new-poll-title").value.trim();
             const o1 = document.getElementById("new-poll-opt1").value.trim();
