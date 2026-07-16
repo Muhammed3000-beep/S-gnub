@@ -157,7 +157,7 @@
                 <div id="view-chat" style="display: none;" class="glass-card rounded-2xl flex flex-col h-[60vh] border border-slate-800/60 overflow-hidden">
                     <div class="p-3 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
                         <span class="text-xs font-bold text-cyan-400">● GERÇEK ZAMANLI SOHBET</span>
-                        <span class="text-[9px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded font-black animate-pulse">LIVE DB</span>
+                        <span class="text-[9px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded font-black animate-pulse">CANLI BAĞLANTI AKTİF</span>
                     </div>
                     <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-950/20 scroll-smooth"></div>
                     <form id="chat-form" class="p-3 border-t border-slate-800 bg-slate-950/60 flex space-x-2">
@@ -234,8 +234,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query as fsQuery, orderBy as fsOrderBy, limit as fsLimit, serverTimestamp, updateDoc, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getDatabase, ref, push, onChildAdded, query as rtdbQuery, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, onSnapshot, query as fsQuery, orderBy as fsOrderBy, limit as fsLimit, serverTimestamp, updateDoc, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDXpYmC0IzpOpwGMkgswBDlo6h5aOlSUEU",
@@ -249,7 +248,6 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const rtdb = getDatabase(app); 
         const provider = new GoogleAuthProvider();
 
         let currentUser = null;
@@ -329,8 +327,8 @@
             document.getElementById("side-user-name").textContent = user.displayName;
             document.getElementById("side-user-bio").textContent = userCustomBio;
             
-            listenChat(); 
-            listenFeed(); 
+            listenChatAnlik(); 
+            loadFeedStatic(); 
         }
 
         onAuthStateChanged(auth, (user) => {
@@ -396,18 +394,19 @@
             reader.readAsDataURL(file);
         };
 
-        // --- FEED VE DİNAMİK LİDERLİK TABLOSU ---
-        function listenFeed() {
+        // --- 1) KOZMİK AKIŞ: SADECE SAYFA YENİLENİNCE / İLK AÇILINCA YÜKLENİR (STATİK) ---
+        async function loadFeedStatic() {
             const postsRef = collection(db, "aura_posts");
             const q = fsQuery(postsRef, fsOrderBy("createdAt", "desc"), fsLimit(50));
 
-            onSnapshot(q, (snapshot) => {
+            try {
+                const querySnapshot = await getDocs(q);
                 const container = document.getElementById("feed-container");
                 container.innerHTML = ""; 
 
                 const userVoteMap = {};
 
-                snapshot.forEach((docSnap) => {
+                querySnapshot.forEach((docSnap) => {
                     const postId = docSnap.id;
                     const post = docSnap.data();
                     const postEl = document.createElement("div");
@@ -425,8 +424,6 @@
                     }
 
                     const isMyPost = currentUser && post.userId === currentUser.uid;
-
-                    // Kullanıcı bazlı oy kilidini denetle
                     const hasUserVoted = localStorage.getItem(`user_voted_global`) === "true";
 
                     let timeString = "Az önce";
@@ -473,7 +470,9 @@
                 });
 
                 renderLeaderboard(userVoteMap);
-            });
+            } catch (error) {
+                console.error("Akış yüklenemedi:", error);
+            }
         }
 
         // --- LİDERLİK TABLOSU: EN ÇOK OY ALAN İLK 3 KİŞİ ---
@@ -487,14 +486,13 @@
                     photo: userVoteMap[name].photo,
                     totalVotes: userVoteMap[name].totalVotes
                 };
-            }).sort((a, b) => b.totalVotes - a.totalVotes).slice(0, 3); // Yalnızca ilk 3 kişi
+            }).sort((a, b) => b.totalVotes - a.totalVotes).slice(0, 3); 
 
             if (sortedUsers.length === 0) {
                 leaderboardContainer.innerHTML = `<p class="text-[10px] text-slate-500 italic">Oylama verisi bekleniyor...</p>`;
                 return;
             }
 
-            // Derece sembolleri
             const medals = ["🥇", "🥈", "🥉"];
 
             sortedUsers.forEach((usr, idx) => {
@@ -526,7 +524,6 @@
                 return;
             }
 
-            // Global oy engeli kontrolü (Kullanıcı 1 kez oy verdiyse her yer kilitlenir)
             if(localStorage.getItem(`user_voted_global`) === "true") {
                 window.showToast("Oy limitine ulaştın! Sistem genelinde sadece bir kez oy verebilirsin.", "error");
                 return;
@@ -538,9 +535,9 @@
                     votes: increment(1)
                 });
                 
-                // Genel oy kilidini aktifleştir
                 localStorage.setItem(`user_voted_global`, "true");
-                window.showToast("Oyun başarıyla işlendi! İlk 3 liderlik tablosu güncellendi. 🚀", "success");
+                window.showToast("Oyunuz kaydedildi! Liderlik tablosunun güncellenmesi için akışı yenileyin. 🚀", "success");
+                loadFeedStatic(); // Yerel görünümü güncelle
             } catch(e) {
                 console.error(e);
                 window.showToast("Oy verme işlemi başarısız oldu.", "error");
@@ -552,60 +549,62 @@
             try {
                 await deleteDoc(doc(db, "aura_posts", postId));
                 window.showToast("Gönderi silindi.", "success");
+                loadFeedStatic();
             } catch(e) {
                 console.error(e);
                 window.showToast("Silinemedi.", "error");
             }
         };
 
-        // --- SOHBET ---
-        function listenChat() {
-            const chatRef = ref(rtdb, 'aura_chat');
-            const q = rtdbQuery(chatRef, limitToLast(35)); 
+        // --- 2) CANLI SOHBET MOTORU: %100 ANLIK VE SÜREKLİ SAKRONİZE (FIRESTORE REALTIME STREAM) ---
+        function listenChatAnlik() {
+            const chatRef = collection(db, "aura_chat");
+            const q = fsQuery(chatRef, fsOrderBy("timestamp", "asc"), fsLimit(100));
             
             const container = document.getElementById("chat-container");
-            container.innerHTML = ""; 
 
-            onChildAdded(q, (snapshot) => {
-                const msg = snapshot.val();
-                if(!msg) return;
+            // Firestore'un anlık dinleyicisi: Yeni mesaj girer girmez saniyesinde tüm kullanıcılarda tetiklenir
+            onSnapshot(q, (snapshot) => {
+                container.innerHTML = ""; 
+                snapshot.forEach((docSnap) => {
+                    const msg = docSnap.data();
+                    const msgEl = document.createElement("div");
+                    const isMe = currentUser && msg.userId === currentUser.uid;
 
-                const msgEl = document.createElement("div");
-                const isMe = currentUser && msg.userId === currentUser.uid;
-
-                msgEl.className = `flex items-start space-x-2.5 ${isMe ? 'flex-row-reverse space-x-reverse' : ''}`;
-                msgEl.innerHTML = `
-                    <img src="${msg.userPhoto || 'https://i.pravatar.cc/100'}" class="w-7 h-7 rounded-full border border-slate-700 object-cover mt-0.5 shadow-sm">
-                    <div class="max-w-[75%]">
-                        <span class="text-[9px] text-slate-500 block mb-0.5 px-1 ${isMe ? 'text-right' : 'text-left'}">${msg.userName}</span>
-                        <div class="p-2.5 text-xs rounded-2xl shadow-sm ${isMe ? 'bg-gradient-to-br from-cyan-600 to-blue-600 text-white rounded-tr-none' : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'} break-words">
-                            ${msg.text}
+                    msgEl.className = `flex items-start space-x-2.5 ${isMe ? 'flex-row-reverse space-x-reverse' : ''}`;
+                    msgEl.innerHTML = `
+                        <img src="${msg.userPhoto || 'https://i.pravatar.cc/100'}" class="w-7 h-7 rounded-full border border-slate-700 object-cover mt-0.5 shadow-sm">
+                        <div class="max-w-[75%]">
+                            <span class="text-[9px] text-slate-500 block mb-0.5 px-1 ${isMe ? 'text-right' : 'text-left'}">${msg.userName}</span>
+                            <div class="p-2.5 text-xs rounded-2xl shadow-sm ${isMe ? 'bg-gradient-to-br from-cyan-600 to-blue-600 text-white rounded-tr-none' : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'} break-words">
+                                ${msg.text}
+                            </div>
                         </div>
-                    </div>
-                `;
-                container.appendChild(msgEl);
+                    `;
+                    container.appendChild(msgEl);
+                });
                 container.scrollTop = container.scrollHeight;
             });
         }
 
-        document.getElementById("chat-form").addEventListener("submit", function(e) {
+        document.getElementById("chat-form").addEventListener("submit", async function(e) {
             e.preventDefault();
             const input = document.getElementById("chat-input");
             const txt = input.value.trim();
             if (!txt || !currentUser) return;
 
-            const chatRef = ref(rtdb, 'aura_chat');
-            push(chatRef, {
-                text: txt,
-                userId: currentUser.uid,
-                userName: currentUser.displayName,
-                userPhoto: userCustomAvatar,
-                timestamp: Date.now()
-            }).then(() => {
+            try {
+                await addDoc(collection(db, "aura_chat"), {
+                    text: txt,
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName,
+                    userPhoto: userCustomAvatar,
+                    timestamp: Date.now()
+                });
                 input.value = ""; 
-            }).catch(() => {
+            } catch (error) {
                 window.showToast("Mesaj gönderilemedi.", "error");
-            });
+            }
         });
 
         window.createPost = async function() {
@@ -625,7 +624,8 @@
                 document.getElementById("post-image-upload").value = ""; 
                 pendingImageData = null;
                 document.getElementById("upload-status").classList.add("hidden");
-                window.showToast("Gönderi yayınlandı! 🪐", "success");
+                window.showToast("Gönderi yayınlandı! Yenileyerek görebilirsiniz. 🪐", "success");
+                loadFeedStatic(); // Gönderen kişi için hemen yenile
             } catch(e) {
                 window.showToast("Gönderi paylaşılamadı.", "error");
             }
