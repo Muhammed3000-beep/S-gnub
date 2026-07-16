@@ -162,7 +162,7 @@
                         <span class="text-[9px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded font-black animate-pulse">LIVE DB</span>
                     </div>
                     <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-950/20"></div>
-                    <form onsubmit="sendChat(event)" class="p-3 border-t border-slate-800 bg-slate-950/60 flex space-x-2">
+                    <form id="chat-form" class="p-3 border-t border-slate-800 bg-slate-950/60 flex space-x-2">
                         <input type="text" id="chat-input" placeholder="Anlık mesaj yazın..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none">
                         <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl text-xs font-bold text-white">Gönder</button>
                     </form>
@@ -200,7 +200,7 @@
                         <span class="text-base">👑</span>
                         <h3 class="text-[10px] font-black text-amber-400 uppercase tracking-widest">AURA LİDERLİK TABLOSU</h3>
                     </div>
-                    <span id="leaderboard-month-tag" class="text-[8px] bg-amber-500/20 text-amber-300 font-extrabold px-1.5 py-0.5 rounded uppercase">TEMMUZ</span>
+                    <span id="leaderboard-month-tag" class="text-[8px] bg-amber-500/20 text-amber-300 font-extrabold px-1.5 py-0.5 rounded uppercase">AY</span>
                 </div>
                 <div id="leaderboard-wrapper" class="space-y-2">
                     <p class="text-[10px] text-slate-500 italic">Kozmik sıralama hesaplanıyor...</p>
@@ -236,8 +236,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, updateDoc, increment, arrayUnion, getDocs, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getDatabase, ref, push, onChildAdded, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDXpYmC0IzpOpwGMkgswBDlo6h5aOlSUEU",
@@ -315,61 +315,6 @@
             });
         };
 
-        async function checkMonthReset() {
-            const systemRef = doc(db, "aura_system", "state");
-            const systemSnap = await getDoc(systemRef);
-            
-            const now = new Date();
-            const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-            
-            const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-            document.getElementById("leaderboard-month-tag").innerText = months[now.getMonth()];
-
-            if (systemSnap.exists()) {
-                const systemData = systemSnap.data();
-                if (systemData.lastActiveMonth !== currentYearMonth) {
-                    await processMonthTransition(currentYearMonth);
-                }
-            } else {
-                await setDoc(systemRef, { lastActiveMonth: currentYearMonth, currentWinnerId: "" });
-            }
-        }
-
-        async function processMonthTransition(newMonthString) {
-            try {
-                const usersCol = collection(db, "aura_users");
-                const q = query(usersCol, orderBy("monthlyVotes", "desc"), limit(1));
-                const querySnap = await getDocs(q);
-                
-                let winnerId = "";
-                if (!querySnap.empty) {
-                    const winnerDoc = querySnap.docs[0];
-                    if (winnerDoc.data().monthlyVotes > 0) {
-                        winnerId = winnerDoc.id;
-                    }
-                }
-
-                const batch = writeBatch(db);
-                const systemRef = doc(db, "aura_system", "state");
-                batch.set(systemRef, { lastActiveMonth: newMonthString, currentWinnerId: winnerId }, { merge: true });
-
-                const allUsersSnap = await getDocs(usersCol);
-                allUsersSnap.forEach((userDoc) => {
-                    const userRef = doc(db, "aura_users", userDoc.id);
-                    const isNewWinner = (userDoc.id === winnerId && winnerId !== "");
-                    batch.update(userRef, {
-                        monthlyVotes: 0,
-                        votedTo: [],
-                        isWinner: isNewWinner
-                    });
-                });
-
-                await batch.commit();
-            } catch (err) {
-                console.error("Ay geçişi sırasında hata:", err);
-            }
-        }
-
         async function updateUI(user) {
             if (!user) return;
             document.getElementById("login-section").style.display = "none";
@@ -377,58 +322,16 @@
             document.getElementById("user-display").style.display = "flex";
             document.getElementById("side-profile-card").style.display = "block";
             
-            try {
-                const userDocRef = doc(db, "aura_users", user.uid);
-                const userDocSnap = await getDoc(userDocRef);
-                
-                await checkMonthReset();
+            userCustomAvatar = user.photoURL;
+            userCustomBio = "Henüz bir kozmik biyografi eklenmedi.";
 
-                if (userDocSnap.exists()) {
-                    const userData = userDocSnap.data();
-                    userCustomAvatar = userData.userPhoto || user.photoURL;
-                    userCustomBio = userData.bio || "Henüz bir kozmik biyografi eklenmedi.";
-                    
-                    if (userData.auraPoints === undefined) {
-                        await setDoc(userDocRef, { auraPoints: 0 }, { merge: true });
-                    }
-                    if (userData.monthlyVotes === undefined) {
-                        await setDoc(userDocRef, { monthlyVotes: 0, votedTo: [], isWinner: false }, { merge: true });
-                    }
-                    await setDoc(userDocRef, { email: user.email }, { merge: true });
-
-                    if (userData.isWinner) {
-                        document.getElementById("winner-badge").style.display = "flex";
-                    } else {
-                        document.getElementById("winner-badge").style.display = "none";
-                    }
-                } else {
-                    userCustomAvatar = user.photoURL;
-                    userCustomBio = "Henüz bir kozmik biyografi eklenmedi.";
-                    await setDoc(userDocRef, {
-                        userName: user.displayName,
-                        email: user.email,
-                        userPhoto: user.photoURL,
-                        bio: userCustomBio,
-                        auraPoints: 0,
-                        monthlyVotes: 0,
-                        votedTo: [],
-                        isWinner: false
-                    }, { merge: true });
-                }
-            } catch (e) {
-                userCustomAvatar = user.photoURL;
-                userCustomBio = "Henüz bir kozmik biyografi eklenmedi.";
-            }
             document.getElementById("user-avatar").src = userCustomAvatar || "https://i.pravatar.cc/100";
             document.getElementById("user-name-tag").textContent = user.displayName;
             document.getElementById("side-user-avatar").src = userCustomAvatar || "https://i.pravatar.cc/100";
             document.getElementById("side-user-name").textContent = user.displayName;
             document.getElementById("side-user-bio").textContent = userCustomBio;
             
-            listenFeed();
-            listenChat();
-            listenPolls();
-            listenLeaderboard(); 
+            listenChat(); // Canlı sohbeti dinlemeye başla
         }
 
         onAuthStateChanged(auth, (user) => {
@@ -449,26 +352,6 @@
             }
         };
 
-        window.saveProfile = async function() {
-            const newAvatar = document.getElementById("edit-avatar-url").value.trim();
-            const newBio = document.getElementById("edit-bio").value.trim();
-            try {
-                await setDoc(doc(db, "aura_users", currentUser.uid), {
-                    userPhoto: newAvatar || currentUser.photoURL,
-                    bio: newBio || "Henüz bir kozmik biyografi eklenmedi."
-                }, { merge: true });
-                userCustomAvatar = newAvatar || currentUser.photoURL;
-                userCustomBio = newBio || "Henüz bir kozmik biyografi eklenmedi.";
-                document.getElementById("user-avatar").src = userCustomAvatar;
-                document.getElementById("side-user-avatar").src = userCustomAvatar;
-                document.getElementById("side-user-bio").textContent = userCustomBio;
-                window.toggleProfileModal(false);
-                window.showToast("Profil güncellendi!", "success");
-            } catch(err) {
-                window.showToast("Profil güncellenirken hata oluştu.", "error");
-            }
-        };
-
         window.switchTab = function(tab) {
             ["feed", "chat", "canvas"].forEach(t => {
                 document.getElementById(`view-${t}`).style.display = "none";
@@ -476,65 +359,64 @@
             });
             document.getElementById(`view-${tab}`).style.display = tab === 'chat' ? 'flex' : 'block';
             document.getElementById(`btn-tab-${tab}`).className = "w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 text-violet-400 border border-violet-500/20";
-        };
-
-        window.setCosmicMood = function(emoji, moodText) {
-            const postInput = document.getElementById("post-input");
-            if(postInput) {
-                postInput.value = `Günün Modu: ${emoji} (${moodText}) — `;
-                postInput.focus();
-                window.showToast(`Mod seçildi: ${emoji}. Fısıltı alanından paylaşabilirsin!`, "success");
+            
+            if(tab === 'chat') {
+                const container = document.getElementById("chat-container");
+                container.scrollTop = container.scrollHeight;
             }
         };
 
-        window.previewAndCompressImage = function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const maxW = 400;
-                    const maxH = 400;
-                    let w = img.width;
-                    let h = img.height;
-                    if (w > maxW || h > maxH) {
-                        if (w > h) {
-                            h = Math.round((h * maxW) / w);
-                            w = maxW;
-                        } else {
-                            w = Math.round((w * maxH) / h);
-                            h = maxH;
-                        }
-                    }
-                    const tempCanvas = document.createElement("canvas");
-                    tempCanvas.width = w;
-                    tempCanvas.height = h;
-                    const tempCtx = tempCanvas.getContext("2d");
-                    tempCtx.drawImage(img, 0, 0, w, h);
-                    pendingImageData = tempCanvas.toDataURL("image/jpeg", 0.7);
-                    document.getElementById("upload-status").classList.remove("hidden");
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        };
+        // --- REALTIME SOHBET PROTOKOLÜ ---
+        function listenChat() {
+            const chatRef = ref(rtdb, 'aura_chat');
+            const container = document.getElementById("chat-container");
+            container.innerHTML = ""; // Tekrarları önlemek için temizle
 
-        // --- DUMMY DİNLEYİCİLER (Hata Almamak İçin Boş Fonksiyonlar) ---
-        function listenFeed() {}
-        function listenChat() {}
-        function listenPolls() {}
-        function listenLeaderboard() {}
-        window.searchNetwork = function() {};
-        window.sendChat = function(e) { e.preventDefault(); };
-        window.shareCanvasAsImage = function() {};
-        window.addNewPoll = function() {};
+            onChildAdded(chatRef, (snapshot) => {
+                const msg = snapshot.val();
+                const msgEl = document.createElement("div");
+                
+                // Mesajı gönderen kişi mevcut kullanıcı mı kontrolü
+                const isMe = currentUser && msg.userId === currentUser.uid;
 
-        // --- AKIŞ (FEED) SİSTEMİ PROTOKOLÜ ---
+                msgEl.className = `flex items-start space-x-2.5 ${isMe ? 'flex-row-reverse space-x-reverse' : ''}`;
+                msgEl.innerHTML = `
+                    <img src="${msg.userPhoto || 'https://i.pravatar.cc/100'}" class="w-7 h-7 rounded-full border border-slate-700 object-cover mt-0.5">
+                    <div class="max-w-[75%]">
+                        <span class="text-[9px] text-slate-500 block mb-0.5 px-1">${msg.userName}</span>
+                        <div class="p-2.5 text-xs rounded-2xl ${isMe ? 'bg-gradient-to-br from-cyan-600 to-blue-600 text-white rounded-tr-none' : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'} break-words">
+                            ${msg.text}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(msgEl);
+                container.scrollTop = container.scrollHeight; // Otomatik aşağı kaydır
+            });
+        }
+
+        document.getElementById("chat-form").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const input = document.getElementById("chat-input");
+            const txt = input.value.trim();
+            if (!txt || !currentUser) return;
+
+            const chatRef = ref(rtdb, 'aura_chat');
+            push(chatRef, {
+                text: txt,
+                userId: currentUser.uid,
+                userName: currentUser.displayName,
+                userPhoto: userCustomAvatar,
+                timestamp: Date.now()
+            }).then(() => {
+                input.value = "";
+            }).catch(() => {
+                window.showToast("Mesaj gönderilemedi.", "error");
+            });
+        });
+
         window.createPost = async function() {
             const txt = document.getElementById("post-input").value.trim();
             if (!txt && !pendingImageData) return;
-            
             try {
                 await addDoc(collection(db, "aura_posts"), {
                     text: txt,
@@ -547,9 +429,9 @@
                 document.getElementById("post-input").value = "";
                 pendingImageData = null;
                 document.getElementById("upload-status").classList.add("hidden");
-                window.showToast("Payload başarıyla evrene gönderildi! 🚀", "success");
+                window.showToast("Akış gönderisi evrene fırlatıldı! 🪐", "success");
             } catch(e) {
-                window.showToast("Gönderi paylaşılırken hata oluştu.", "error");
+                window.showToast("Gönderi paylaşılamadı.", "error");
             }
         };
     </script>
