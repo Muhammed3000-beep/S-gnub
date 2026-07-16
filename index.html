@@ -236,8 +236,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        // EKSİK OLAN FONKSİYONLAR BURAYA EKLENDİ (query, orderBy vs.)
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query as fsQuery, orderBy as fsOrderBy, limit as fsLimit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getDatabase, ref, push, onChildAdded, query as rtdbQuery, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDXpYmC0IzpOpwGMkgswBDlo6h5aOlSUEU",
@@ -331,7 +332,9 @@
             document.getElementById("side-user-name").textContent = user.displayName;
             document.getElementById("side-user-bio").textContent = userCustomBio;
             
-            listenChat(); // Canlı sohbeti dinlemeye başla
+            // HER İKİ SİSTEM DE BURADA BAŞLATILIYOR
+            listenChat(); 
+            listenFeed(); 
         }
 
         onAuthStateChanged(auth, (user) => {
@@ -366,31 +369,74 @@
             }
         };
 
-        // --- REALTIME SOHBET PROTOKOLÜ ---
+        // --- YENİ EKLENEN KOZMİK AKIŞ (FEED) PROTOKOLÜ ---
+        function listenFeed() {
+            const postsRef = collection(db, "aura_posts");
+            // Gönderileri yeninden eskiye doğru sırala ve son 50 tanesini al
+            const q = fsQuery(postsRef, fsOrderBy("createdAt", "desc"), fsLimit(50));
+
+            onSnapshot(q, (snapshot) => {
+                const container = document.getElementById("feed-container");
+                container.innerHTML = ""; // Veri güncellendiğinde tekrarlanmayı önler
+
+                snapshot.forEach((docSnap) => {
+                    const post = docSnap.data();
+                    const postEl = document.createElement("div");
+                    
+                    // Tarih/Saat Ayarı
+                    let timeString = "Az önce";
+                    if(post.createdAt) {
+                        const date = post.createdAt.toDate();
+                        timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' - ' + date.toLocaleDateString();
+                    }
+
+                    postEl.className = "glass-card rounded-2xl p-4 space-y-3 border border-slate-800/80 hover:border-cyan-500/30 transition duration-300";
+                    postEl.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <img src="${post.userPhoto || 'https://i.pravatar.cc/100'}" class="w-10 h-10 rounded-full border-2 border-cyan-500/50 object-cover">
+                            <div>
+                                <span class="text-[13px] font-black text-slate-100 block">${post.userName}</span>
+                                <span class="text-[9px] text-slate-500 block">${timeString}</span>
+                            </div>
+                        </div>
+                        <div class="text-[13px] text-slate-300 break-words leading-relaxed pl-1">
+                            ${post.text || ''}
+                        </div>
+                        ${post.image ? `<img src="${post.image}" class="w-full rounded-xl border border-slate-800 mt-3 object-cover shadow-lg">` : ''}
+                    `;
+                    container.appendChild(postEl);
+                });
+            });
+        }
+
+        // --- GÜNCELLENEN REALTIME SOHBET PROTOKOLÜ ---
         function listenChat() {
             const chatRef = ref(rtdb, 'aura_chat');
+            // SADECE SON 50 MESAJI ÇEKİYORUZ - Veritabanı şişse bile anlık yüklenir.
+            const q = rtdbQuery(chatRef, limitToLast(50)); 
+            
             const container = document.getElementById("chat-container");
-            container.innerHTML = ""; // Tekrarları önlemek için temizle
+            container.innerHTML = ""; 
 
-            onChildAdded(chatRef, (snapshot) => {
+            onChildAdded(q, (snapshot) => {
                 const msg = snapshot.val();
                 const msgEl = document.createElement("div");
                 
-                // Mesajı gönderen kişi mevcut kullanıcı mı kontrolü
                 const isMe = currentUser && msg.userId === currentUser.uid;
 
                 msgEl.className = `flex items-start space-x-2.5 ${isMe ? 'flex-row-reverse space-x-reverse' : ''}`;
                 msgEl.innerHTML = `
-                    <img src="${msg.userPhoto || 'https://i.pravatar.cc/100'}" class="w-7 h-7 rounded-full border border-slate-700 object-cover mt-0.5">
+                    <img src="${msg.userPhoto || 'https://i.pravatar.cc/100'}" class="w-7 h-7 rounded-full border border-slate-700 object-cover mt-0.5 shadow-sm">
                     <div class="max-w-[75%]">
-                        <span class="text-[9px] text-slate-500 block mb-0.5 px-1">${msg.userName}</span>
-                        <div class="p-2.5 text-xs rounded-2xl ${isMe ? 'bg-gradient-to-br from-cyan-600 to-blue-600 text-white rounded-tr-none' : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'} break-words">
+                        <span class="text-[9px] text-slate-500 block mb-0.5 px-1 ${isMe ? 'text-right' : 'text-left'}">${msg.userName}</span>
+                        <div class="p-2.5 text-xs rounded-2xl shadow-sm ${isMe ? 'bg-gradient-to-br from-cyan-600 to-blue-600 text-white rounded-tr-none' : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'} break-words">
                             ${msg.text}
                         </div>
                     </div>
                 `;
                 container.appendChild(msgEl);
-                container.scrollTop = container.scrollHeight; // Otomatik aşağı kaydır
+                // Yeni mesaj geldiğinde otomatik aşağı kaydırır
+                container.scrollTop = container.scrollHeight; 
             });
         }
 
