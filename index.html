@@ -86,6 +86,7 @@
             <div id="side-profile-card" style="display: none;" class="glass-card rounded-2xl p-4 border border-violet-500/10 text-center space-y-3">
                 <div class="relative w-16 h-16 mx-auto">
                     <img id="side-user-avatar" src="https://i.pravatar.cc/100" class="w-full h-full rounded-full border-2 border-violet-500 shadow-md object-cover">
+                    <div id="winner-badge" style="display: none;" class="absolute -top-1 -right-1 bg-amber-500 text-black text-[9px] font-black rounded-full w-5 h-5 flex items-center justify-center border border-black shadow" title="Geçen Ayın Oylama Şampiyonu">🏆</div>
                 </div>
                 <div>
                     <h4 id="side-user-name" class="text-xs font-bold text-slate-200">Yükleniyor...</h4>
@@ -193,16 +194,29 @@
         </main>
 
         <aside class="lg:col-span-3 space-y-6">
+            <div class="glass-card rounded-2xl p-4 space-y-3 border border-amber-500/20 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-base">👑</span>
+                        <h3 class="text-[10px] font-black text-amber-400 uppercase tracking-widest">AURA LİDERLİK TABLOSU</h3>
+                    </div>
+                    <span id="leaderboard-month-tag" class="text-[8px] bg-amber-500/20 text-amber-300 font-extrabold px-1.5 py-0.5 rounded uppercase">TEMMUZ</span>
+                </div>
+                <div id="leaderboard-wrapper" class="space-y-2">
+                    <p class="text-[10px] text-slate-500 italic">Kozmik sıralama hesaplanıyor...</p>
+                </div>
+            </div>
+
             <div class="glass-card rounded-2xl p-4 space-y-4 border border-cyan-500/10">
                 <h3 class="text-[10px] font-black text-cyan-400 uppercase tracking-widest">📊 KÜRESEL ANKETLER</h3>
                 <div class="space-y-4" id="polls-list-wrapper"></div>
                 
                 <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-900 space-y-2">
                     <span class="text-[10px] text-slate-400 font-bold block">Yeni Anket Oluştur:</span>
-                    <input type="text" id="new-poll-title" placeholder="Anket Sorusu?" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none">
+                    <input type="text" id="new-poll-title" placeholder="Anket Sorusu?" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none text-slate-800">
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="new-poll-opt1" placeholder="Seçenek A" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none">
-                        <input type="text" id="new-poll-opt2" placeholder="Seçenek B" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none">
+                        <input type="text" id="new-poll-opt1" placeholder="Seçenek A" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none text-slate-800">
+                        <input type="text" id="new-poll-opt2" placeholder="Seçenek B" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none text-slate-800">
                     </div>
                     <button onclick="addNewPoll()" class="w-full py-1.5 bg-cyan-600 rounded text-[9px] font-black text-white">ANKETİ BAŞLAT</button>
                 </div>
@@ -222,7 +236,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, updateDoc, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, updateDoc, increment, arrayUnion, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
         import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -301,6 +315,70 @@
             });
         };
 
+        // Ay Sonu Sıfırlama ve Kazanan Kontrol Sistemi
+        async function checkMonthReset() {
+            const systemRef = doc(db, "aura_system", "state");
+            const systemSnap = await getDoc(systemRef);
+            
+            const now = new Date();
+            const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            
+            // Ay ismi etiketini güncelle
+            const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+            document.getElementById("leaderboard-month-tag").innerText = months[now.getMonth()];
+
+            if (systemSnap.exists()) {
+                const systemData = systemSnap.data();
+                if (systemData.lastActiveMonth !== currentYearMonth) {
+                    // Ay değişti! Kazananı belirleyelim ve oyları sıfırlayalım.
+                    await processMonthTransition(currentYearMonth);
+                }
+            } else {
+                // Sistem kaydı yoksa ilk kez oluşturuluyor
+                await setDoc(systemRef, { lastActiveMonth: currentYearMonth, currentWinnerId: "" });
+            }
+        }
+
+        async function processMonthTransition(newMonthString) {
+            try {
+                // 1. En çok aylık oyu olan kullanıcıyı bul
+                const usersCol = collection(db, "aura_users");
+                const q = query(usersCol, orderBy("monthlyVotes", "desc"), limit(1));
+                const querySnap = await getDocs(q);
+                
+                let winnerId = "";
+                if (!querySnap.empty) {
+                    const winnerDoc = querySnap.docs[0];
+                    if (winnerDoc.data().monthlyVotes > 0) {
+                        winnerId = winnerDoc.id;
+                    }
+                }
+
+                const batch = writeBatch(db);
+
+                // 2. Sistem şampiyonunu güncelle
+                const systemRef = doc(db, "aura_system", "state");
+                batch.set(systemRef, { lastActiveMonth: newMonthString, currentWinnerId: winnerId }, { merge: true });
+
+                // 3. Tüm eski kazananları kaldır, yenisini ekle ve oyları sıfırla
+                const allUsersSnap = await getDocs(usersCol);
+                allUsersSnap.forEach((userDoc) => {
+                    const userRef = doc(db, "aura_users", userDoc.id);
+                    const isNewWinner = (userDoc.id === winnerId && winnerId !== "");
+                    batch.update(userRef, {
+                        monthlyVotes: 0,
+                        votedTo: [], // Oy geçmişini temizle
+                        isWinner: isNewWinner
+                    });
+                });
+
+                await batch.commit();
+                console.log("Yeni aya geçiş başarılı. Oylar sıfırlandı. Yeni Şampiyon: " + winnerId);
+            } catch (err) {
+                console.error("Ay geçişi sırasında hata:", err);
+            }
+        }
+
         async function updateUI(user) {
             if (!user) return;
             document.getElementById("login-section").style.display = "none";
@@ -312,11 +390,27 @@
                 const userDocRef = doc(db, "aura_users", user.uid);
                 const userDocSnap = await getDoc(userDocRef);
                 
+                await checkMonthReset(); // Ay geçiş denetimini tetikle
+
                 if (userDocSnap.exists()) {
                     const userData = userDocSnap.data();
                     userCustomAvatar = userData.userPhoto || user.photoURL;
                     userCustomBio = userData.bio || "Henüz bir kozmik biyografi eklenmedi.";
+                    
+                    if (userData.auraPoints === undefined) {
+                        await setDoc(userDocRef, { auraPoints: 0 }, { merge: true });
+                    }
+                    if (userData.monthlyVotes === undefined) {
+                        await setDoc(userDocRef, { monthlyVotes: 0, votedTo: [], isWinner: false }, { merge: true });
+                    }
                     await setDoc(userDocRef, { email: user.email }, { merge: true });
+
+                    // Kazanan rozeti kontrolü
+                    if (userData.isWinner) {
+                        document.getElementById("winner-badge").style.display = "flex";
+                    } else {
+                        document.getElementById("winner-badge").style.display = "none";
+                    }
                 } else {
                     userCustomAvatar = user.photoURL;
                     userCustomBio = "Henüz bir kozmik biyografi eklenmedi.";
@@ -324,7 +418,11 @@
                         userName: user.displayName,
                         email: user.email,
                         userPhoto: user.photoURL,
-                        bio: userCustomBio
+                        bio: userCustomBio,
+                        auraPoints: 0,
+                        monthlyVotes: 0,
+                        votedTo: [],
+                        isWinner: false
                     }, { merge: true });
                 }
             } catch (e) {
@@ -340,6 +438,7 @@
             listenFeed();
             listenChat();
             listenPolls();
+            listenLeaderboard(); 
         }
 
         onAuthStateChanged(auth, (user) => {
@@ -389,7 +488,6 @@
             document.getElementById(`btn-tab-${tab}`).className = "w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 text-violet-400 border border-violet-500/20";
         };
 
-        // GÜNÜN KOZMİK MODU TETİKLEYİCİSİ
         window.setCosmicMood = function(emoji, moodText) {
             const postInput = document.getElementById("post-input");
             if(postInput) {
@@ -399,7 +497,6 @@
             }
         };
 
-        // GÖRSEL SIKIŞTIRMA VE ÖNİZLEME MOTORU
         window.previewAndCompressImage = function(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -433,7 +530,6 @@
             reader.readAsDataURL(file);
         };
 
-        // FISILTI (POST) OLUŞTURMA
         window.createPost = async function() {
             const text = document.getElementById("post-input").value.trim();
             if (!text && !pendingImageData) {
@@ -451,17 +547,62 @@
                     likes: 0,
                     likedBy: []
                 });
+
+                await updateDoc(doc(db, "aura_users", currentUser.uid), {
+                    auraPoints: increment(10)
+                });
+
                 document.getElementById("post-input").value = "";
                 pendingImageData = null;
                 document.getElementById("upload-status").classList.add("hidden");
                 document.getElementById("post-image-upload").value = "";
-                window.showToast("Fısıltı akışa gönderildi! 🪐", "success");
+                window.showToast("Fısıltı akışa gönderildi! (+10 AP) 🪐", "success");
             } catch(e) {
                 window.showToast("Payload gönderilemedi.", "error");
             }
         };
 
-        // AKIŞI ANLIK TAKİP ETME
+        // KULLANICIYA OY VERME MEKANİZMASI
+        window.voteUser = async function(targetUserId, targetUserName) {
+            if (!currentUser) return;
+            if (currentUser.uid === targetUserId) {
+                window.showToast("Kendine oy veremezsin!", "error");
+                return;
+            }
+
+            try {
+                const myUserRef = doc(db, "aura_users", currentUser.uid);
+                const myUserSnap = await getDoc(myUserRef);
+                
+                if (myUserSnap.exists()) {
+                    const myData = myUserSnap.data();
+                    const alreadyVotedTo = myData.votedTo || [];
+
+                    // Eğer bu ay bu kullanıcıya zaten oy verilmişse engelle
+                    if (alreadyVotedTo.includes(targetUserId)) {
+                        window.showToast(`${targetUserName} isimli kullanıcıya bu ay zaten oy verdin!`, "error");
+                        return;
+                    }
+
+                    // Hedef kullanıcının oyunu 1 artır
+                    const targetUserRef = doc(db, "aura_users", targetUserId);
+                    await updateDoc(targetUserRef, {
+                        monthlyVotes: increment(1)
+                    });
+
+                    // Benim verdiğim oylar geçmişine hedefi ekle (Spam önleyici)
+                    await updateDoc(myUserRef, {
+                        votedTo: arrayUnion(targetUserId)
+                    });
+
+                    window.showToast(`${targetUserName} kullanıcısına başarıyla oy verildi! 🏆`, "success");
+                }
+            } catch (err) {
+                window.showToast("Oy verme işlemi başarısız.", "error");
+                console.error(err);
+            }
+        };
+
         let unsubscribeFeed = null;
         function listenFeed() {
             if (unsubscribeFeed) unsubscribeFeed();
@@ -491,9 +632,14 @@
                         </div>
                         <p class="text-xs text-slate-300 break-words whitespace-pre-line">${post.text || ''}</p>
                         ${imageHtml}
-                        <div class="flex items-center space-x-4 pt-2 border-t border-slate-900">
-                            <button onclick="likePost('${id}')" class="flex items-center space-x-1.5 text-[10px] ${hasLiked ? 'text-pink-500' : 'text-slate-400'} hover:text-pink-500 transition">
-                                <span>❤️</span> <span>${post.likes || 0}</span>
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-900">
+                            <div class="flex items-center space-x-4">
+                                <button onclick="likePost('${id}')" class="flex items-center space-x-1.5 text-[10px] ${hasLiked ? 'text-pink-500' : 'text-slate-400'} hover:text-pink-500 transition">
+                                    <span>❤️</span> <span>${post.likes || 0}</span>
+                                </button>
+                            </div>
+                            <button onclick="voteUser('${post.userId}', '${post.userName.replace(/'/g, "\\'")}')" class="px-3 py-1 bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/40 hover:to-orange-500/40 border border-amber-500/30 rounded-lg text-[10px] font-black text-amber-300 transition flex items-center space-x-1">
+                                <span>👍</span> <span>Oy Ver</span>
                             </button>
                         </div>
                     `;
@@ -503,165 +649,213 @@
         }
 
         window.likePost = async function(postId) {
-            const docRef = doc(db, "aura_posts", postId);
             try {
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const likedBy = data.likedBy || [];
+                const postRef = doc(db, "aura_posts", postId);
+                const postSnap = await getDoc(postRef);
+                if (postSnap.exists()) {
+                    const postData = postSnap.data();
+                    const likedBy = postData.likedBy || [];
                     if (likedBy.includes(currentUser.uid)) {
-                        await updateDoc(docRef, {
-                            likes: increment(-1),
-                            likedBy: likedBy.filter(uid => uid !== currentUser.uid)
-                        });
-                    } else {
-                        await updateDoc(docRef, {
-                            likes: increment(1),
-                            likedBy: arrayUnion(currentUser.uid)
-                        });
+                        window.showToast("Bu fısıltıyı zaten beğendin!", "error");
+                        return;
                     }
+                    await updateDoc(postRef, {
+                        likes: increment(1),
+                        likedBy: arrayUnion(currentUser.uid)
+                    });
+                    window.showToast("Fısıltı beğenildi!", "success");
                 }
-            } catch(e) {
-                window.showToast("Beğeni işlemi başarısız.", "error");
+            } catch(err) {
+                window.showToast("Beğenme işlemi başarısız.", "error");
             }
         };
 
-        // ARAMA SÜZGECİ
-        window.searchNetwork = function() {
-            const queryVal = document.getElementById("search-input").value.trim().toLowerCase();
-            const cards = document.getElementById("feed-container").children;
-            for (let card of cards) {
-                if (card.textContent.toLowerCase().includes(queryVal)) {
-                    card.style.display = "block";
-                } else {
-                    card.style.display = "none";
-                }
-            }
-        };
-
-        // KOLEKTİF SOHBET SİSTEMİ
-        function listenChat() {
-            const chatRef = ref(rtdb, "collective_chat");
-            const chatContainer = document.getElementById("chat-container");
-            chatContainer.innerHTML = "";
-            
-            onChildAdded(chatRef, (snapshot) => {
-                const msg = snapshot.val();
-                const msgEl = document.createElement("div");
-                const isMe = msg.userId === currentUser.uid;
+        // LİDERLİK TABLOSUNU AY OYLARINA GÖRE ANLIK SIRALAMA (TOP 3)
+        let unsubscribeLeaderboard = null;
+        function listenLeaderboard() {
+            if (unsubscribeLeaderboard) unsubscribeLeaderboard();
+            const q = query(collection(db, "aura_users"), orderBy("monthlyVotes", "desc"), limit(3));
+            unsubscribeLeaderboard = onSnapshot(q, (snapshot) => {
+                const wrapper = document.getElementById("leaderboard-wrapper");
+                wrapper.innerHTML = "";
                 
-                msgEl.className = `flex flex-col max-w-[80%] ${isMe ? 'ml-auto items-end' : 'mr-auto items-start'}`;
-                msgEl.innerHTML = `
-                    <div class="flex items-center space-x-1.5 mb-1">
-                        <span class="text-[8px] text-slate-400 font-bold">${msg.userName}</span>
-                    </div>
-                    <div class="px-3 py-2 rounded-2xl text-xs ${isMe ? 'bg-violet-600/80 rounded-tr-none text-white' : 'bg-slate-900 border border-slate-800 rounded-tl-none text-slate-100'}">
-                        ${msg.text}
-                    </div>
-                `;
-                chatContainer.appendChild(msgEl);
-                chatContainer.scrollTop = chatContainer.scrollHeight;
+                if (snapshot.empty) {
+                    wrapper.innerHTML = `<p class="text-[10px] text-slate-500 italic">Sistemde henüz oy alan kullanıcı yok.</p>`;
+                    return;
+                }
+
+                let rank = 1;
+                snapshot.forEach((docSnap) => {
+                    const userData = docSnap.data();
+                    const votes = userData.monthlyVotes || 0;
+                    
+                    const rankMedals = ["👑", "🥈", "🥉"];
+                    const medal = rankMedals[rank - 1] || "⚡";
+
+                    // Birinci sıradaki şampiyona parlayan altın tasarımı
+                    const borderStyle = rank === 1 ? 'border-amber-500/30 bg-amber-500/5' : 'border-slate-800 bg-slate-950/40';
+
+                    const item = document.createElement("div");
+                    item.className = `flex items-center justify-between p-2 rounded-xl border ${borderStyle} transition`;
+                    item.innerHTML = `
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs">${medal}</span>
+                            <img src="${userData.userPhoto || 'https://i.pravatar.cc/100'}" class="w-6 h-6 rounded-full object-cover border border-slate-700">
+                            <span class="text-[10px] font-bold ${rank === 1 ? 'text-amber-300' : 'text-slate-300'} truncate max-w-[100px]">${userData.userName}</span>
+                        </div>
+                        <span class="text-[10px] font-extrabold ${rank === 1 ? 'text-amber-400' : 'text-slate-400'}">${votes} Oy</span>
+                    `;
+                    wrapper.appendChild(item);
+                    rank++;
+                });
             });
         }
 
-        window.sendChat = function(e) {
-            e.preventDefault();
-            const chatInput = document.getElementById("chat-input");
-            const text = chatInput.value.trim();
-            if (!text) return;
-            
-            const chatRef = ref(rtdb, "collective_chat");
-            push(chatRef, {
-                userId: currentUser.uid,
-                userName: currentUser.displayName,
-                text: text,
-                timestamp: Date.now()
+        // --- DİĞER KODLAR VE CANLI SOHBET/ANKET YAPISI ---
+        let unsubscribeChat = null;
+        function listenChat() {
+            if (unsubscribeChat) unsubscribeChat();
+            const q = query(collection(db, "aura_chat"), orderBy("createdAt", "asc"), limit(50));
+            unsubscribeChat = onSnapshot(q, (snapshot) => {
+                const container = document.getElementById("chat-container");
+                container.innerHTML = "";
+                snapshot.forEach((docSnap) => {
+                    const msg = docSnap.data();
+                    const div = document.createElement("div");
+                    div.className = "flex items-start space-x-2.5 max-w-[85%]";
+                    div.innerHTML = `
+                        <img src="${msg.userPhoto || 'https://i.pravatar.cc/100'}" class="w-6 h-6 rounded-full mt-0.5 object-cover">
+                        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl rounded-tl-none p-2.5">
+                            <span class="text-[9px] font-black text-violet-400 block mb-0.5">${msg.userName}</span>
+                            <p class="text-[11px] text-slate-300 break-words leading-relaxed">${msg.text}</p>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+                container.scrollTop = container.scrollHeight;
             });
-            chatInput.value = "";
+        }
+
+        window.sendChat = async function(event) {
+            event.preventDefault();
+            const input = document.getElementById("chat-input");
+            const text = input.value.trim();
+            if(!text) return;
+            try {
+                await addDoc(collection(db, "aura_chat"), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName,
+                    userPhoto: userCustomAvatar || currentUser.photoURL,
+                    text: text,
+                    createdAt: serverTimestamp()
+                });
+                input.value = "";
+            } catch(e) {
+                window.showToast("Mesaj gönderilemedi.", "error");
+            }
         };
 
-        // TUVAL PAYLAŞIM ALTYAPISI
-        window.shareCanvasAsImage = function() {
-            pendingImageData = canvas.toDataURL("image/jpeg", 0.7);
-            document.getElementById("upload-status").classList.remove("hidden");
-            window.switchTab('feed');
-            window.showToast("Tuval kopyalandı! Şimdi bir açıklama ekleyip Payload Gönder butonuna basabilirsin. 🎨", "success");
+        window.shareCanvasAsImage = async function() {
+            try {
+                const imgData = canvas.toDataURL("image/png");
+                await addDoc(collection(db, "aura_posts"), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName,
+                    userPhoto: userCustomAvatar || currentUser.photoURL,
+                    text: "🎨 Tuval Protokolü ile oluşturulan anlık tasarım:",
+                    image: imgData,
+                    createdAt: serverTimestamp(),
+                    likes: 0,
+                    likedBy: []
+                });
+                window.showToast("Tuval akışta başarıyla paylaşıldı! 🌍", "success");
+                switchTab('feed');
+            } catch(e) {
+                window.showToast("Tuval paylaşılamadı.", "error");
+            }
         };
 
-        // KÜRESEL ANKET ALTYAPISI
+        let unsubscribePolls = null;
         function listenPolls() {
-            const q = query(collection(db, "aura_polls"), limit(10));
-            onSnapshot(q, (snapshot) => {
+            if (unsubscribePolls) unsubscribePolls();
+            const q = query(collection(db, "aura_polls"), orderBy("createdAt", "desc"), limit(3));
+            unsubscribePolls = onSnapshot(q, (snapshot) => {
                 const wrapper = document.getElementById("polls-list-wrapper");
                 wrapper.innerHTML = "";
                 snapshot.forEach((docSnap) => {
                     const poll = docSnap.data();
                     const id = docSnap.id;
-                    const totalVotes = (poll.votes1 || 0) + (poll.votes2 || 0);
-                    const pct1 = totalVotes > 0 ? Math.round(((poll.votes1 || 0) / totalVotes) * 100) : 0;
-                    const pct2 = totalVotes > 0 ? Math.round(((poll.votes2 || 0) / totalVotes) * 100) : 0;
-                    
-                    const pollEl = document.createElement("div");
-                    pollEl.className = "bg-slate-900/50 p-3 rounded-xl border border-slate-800 space-y-2 text-xs";
-                    pollEl.innerHTML = `
-                        <p class="font-bold text-slate-200">${poll.title}</p>
-                        <div class="space-y-1.5">
-                            <button onclick="votePoll('${id}', 'votes1')" class="w-full text-left bg-slate-950/80 hover:bg-slate-900 p-2 rounded-lg relative overflow-hidden transition">
-                                <div class="absolute inset-y-0 left-0 bg-cyan-600/20" style="width: ${pct1}%"></div>
-                                <div class="relative flex justify-between">
-                                    <span>${poll.opt1}</span>
-                                    <span class="font-bold text-cyan-400">${pct1}% (${poll.votes1 || 0})</span>
-                                </div>
+                    const v1 = poll.votes1 || 0;
+                    const v2 = poll.votes2 || 0;
+                    const total = v1 + v2;
+                    const pct1 = total === 0 ? 0 : Math.round((v1 / total) * 100);
+                    const pct2 = total === 0 ? 0 : Math.round((v2 / total) * 100);
+
+                    const pollCard = document.createElement("div");
+                    pollCard.className = "bg-slate-950/40 border border-slate-900 rounded-xl p-3 space-y-2";
+                    pollCard.innerHTML = `
+                        <span class="text-[10px] text-slate-300 font-extrabold block">❓ ${poll.title}</span>
+                        <div class="space-y-1.5 pt-1">
+                            <button onclick="votePoll('${id}', 1)" class="w-full text-left bg-slate-900 hover:bg-slate-850 p-2 rounded text-[10px] flex justify-between items-center transition">
+                                <span>${poll.opt1}</span> <span class="font-bold text-cyan-400">${v1} (${pct1}%)</span>
                             </button>
-                            <button onclick="votePoll('${id}', 'votes2')" class="w-full text-left bg-slate-950/80 hover:bg-slate-900 p-2 rounded-lg relative overflow-hidden transition">
-                                <div class="absolute inset-y-0 left-0 bg-violet-600/20" style="width: ${pct2}%"></div>
-                                <div class="relative flex justify-between">
-                                    <span>${poll.opt2}</span>
-                                    <span class="font-bold text-violet-400">${pct2}% (${poll.votes2 || 0})</span>
-                                </div>
+                            <button onclick="votePoll('${id}', 2)" class="w-full text-left bg-slate-900 hover:bg-slate-850 p-2 rounded text-[10px] flex justify-between items-center transition">
+                                <span>${poll.opt2}</span> <span class="font-bold text-violet-400">${v2} (${pct2}%)</span>
                             </button>
                         </div>
                     `;
-                    wrapper.appendChild(pollEl);
+                    wrapper.appendChild(pollCard);
                 });
             });
         }
+
+        window.votePoll = async function(pollId, optionIndex) {
+            try {
+                const pollRef = doc(db, "aura_polls", pollId);
+                const pollSnap = await getDoc(pollRef);
+                if (pollSnap.exists()) {
+                    const pollData = pollSnap.data();
+                    const votedUsers = pollData.votedUsers || [];
+                    if (votedUsers.includes(currentUser.uid)) {
+                        window.showToast("Bu ankette zaten oy kullandın!", "error");
+                        return;
+                    }
+                    const updateField = optionIndex === 1 ? { votes1: increment(1) } : { votes2: increment(1) };
+                    await updateDoc(pollRef, {
+                        ...updateField,
+                        votedUsers: arrayUnion(currentUser.uid)
+                    });
+                    window.showToast("Anket oyu başarıyla kaydedildi!", "success");
+                }
+            } catch(err) {
+                window.showToast("Oy verme hatası.", "error");
+            }
+        };
 
         window.addNewPoll = async function() {
             const title = document.getElementById("new-poll-title").value.trim();
             const opt1 = document.getElementById("new-poll-opt1").value.trim();
             const opt2 = document.getElementById("new-poll-opt2").value.trim();
-            if (!title || !opt1 || !opt2) {
-                window.showToast("Anket alanlarını boş bırakamazsın!", "error");
+            if(!title || !opt1 || !opt2) {
+                window.showToast("Lütfen tüm anket alanlarını doldur!", "error");
                 return;
             }
             try {
                 await addDoc(collection(db, "aura_polls"), {
-                    title,
-                    opt1,
-                    opt2,
+                    title: title,
+                    opt1: opt1,
+                    opt2: opt2,
                     votes1: 0,
                     votes2: 0,
+                    votedUsers: [],
                     createdAt: serverTimestamp()
                 });
                 document.getElementById("new-poll-title").value = "";
                 document.getElementById("new-poll-opt1").value = "";
                 document.getElementById("new-poll-opt2").value = "";
-                window.showToast("Kozmik anket başlatıldı! 📊", "success");
+                window.showToast("Yeni anket başarıyla başlatıldı! 📊", "success");
             } catch(e) {
-                window.showToast("Anket oluşturulamadı.", "error");
-            }
-        };
-
-        window.votePoll = async function(pollId, option) {
-            try {
-                const docRef = doc(db, "aura_polls", pollId);
-                await updateDoc(docRef, {
-                    [option]: increment(1)
-                });
-                window.showToast("Seçiminiz kozmik verilere işlendi! ⚡", "success");
-            } catch (e) {
-                window.showToast("Oy verilirken hata oluştu.", "error");
+                window.showToast("Anket başlatılamadı.", "error");
             }
         };
     </script>
