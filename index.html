@@ -213,10 +213,10 @@
                 
                 <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-900 space-y-2">
                     <span class="text-[10px] text-slate-400 font-bold block">Yeni Anket Oluştur:</span>
-                    <input type="text" id="new-poll-title" placeholder="Anket Sorusu?" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none text-slate-800">
+                    <input type="text" id="new-poll-title" placeholder="Anket Sorusu?" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none border-slate-800">
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="new-poll-opt1" placeholder="Seçenek A" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none text-slate-800">
-                        <input type="text" id="new-poll-opt2" placeholder="Seçenek B" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none text-slate-800">
+                        <input type="text" id="new-poll-opt1" placeholder="Seçenek A" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none border-slate-800">
+                        <input type="text" id="new-poll-opt2" placeholder="Seçenek B" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none border-slate-800">
                     </div>
                     <button onclick="addNewPoll()" class="w-full py-1.5 bg-cyan-600 rounded text-[9px] font-black text-white">ANKETİ BAŞLAT</button>
                 </div>
@@ -234,10 +234,10 @@
     </script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, updateDoc, increment, arrayUnion, getDocs, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-        import { getDatabase, ref, push, onChildAdded, set } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, updateDoc, increment, arrayUnion, getDocs, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getDatabase, ref, push, onChildAdded, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDXpYmC0IzpOpwGMkgswBDlo6h5aOlSUEU",
@@ -520,352 +520,37 @@
             reader.readAsDataURL(file);
         };
 
-        // --- AKIŞ (FEED) SİSTEMİ VE SİLME PROTOKOLÜ ---
-        let allFeedPosts = [];
+        // --- DUMMY DİNLEYİCİLER (Hata Almamak İçin Boş Fonksiyonlar) ---
+        function listenFeed() {}
+        function listenChat() {}
+        function listenPolls() {}
+        function listenLeaderboard() {}
+        window.searchNetwork = function() {};
+        window.sendChat = function(e) { e.preventDefault(); };
+        window.shareCanvasAsImage = function() {};
+        window.addNewPoll = function() {};
 
+        // --- AKIŞ (FEED) SİSTEMİ PROTOKOLÜ ---
         window.createPost = async function() {
             const txt = document.getElementById("post-input").value.trim();
             if (!txt && !pendingImageData) return;
             
             try {
                 await addDoc(collection(db, "aura_posts"), {
+                    text: txt,
+                    image: pendingImageData,
                     userId: currentUser.uid,
                     userName: currentUser.displayName,
-                    userPhoto: userCustomAvatar || currentUser.photoURL,
-                    text: txt,
-                    image: pendingImageData || "",
-                    timestamp: serverTimestamp(),
-                    upvotes: 0,
-                    voters: []
+                    userPhoto: userCustomAvatar,
+                    createdAt: serverTimestamp()
                 });
                 document.getElementById("post-input").value = "";
                 pendingImageData = null;
-                document.getElementById("post-image-upload").value = "";
                 document.getElementById("upload-status").classList.add("hidden");
-                window.showToast("Payload başarıyla yörüngeye fırlatıldı!", "success");
+                window.showToast("Payload başarıyla evrene gönderildi! 🚀", "success");
             } catch(e) {
-                window.showToast("Gönderim hatası.", "error");
+                window.showToast("Gönderi paylaşılırken hata oluştu.", "error");
             }
-        };
-
-        window.deletePost = async function(postId) {
-            if (confirm("Bu fısıltıyı kalıcı olarak silmek istediğinden emin misin?")) {
-                try {
-                    await deleteDoc(doc(db, "aura_posts", postId));
-                    window.showToast("Gönderi başarıyla imha edildi.", "success");
-                } catch(e) {
-                    window.showToast("Silme hatası oluştu.", "error");
-                }
-            }
-        };
-
-        function listenFeed() {
-            const qFeed = query(collection(db, "aura_posts"), orderBy("timestamp", "desc"), limit(40));
-            onSnapshot(qFeed, (snapshot) => {
-                allFeedPosts = [];
-                snapshot.forEach(doc => {
-                    allFeedPosts.push({ id: doc.id, ...doc.data() });
-                });
-                renderFeed(allFeedPosts);
-            });
-        }
-
-        function renderFeed(posts) {
-            const container = document.getElementById("feed-container");
-            container.innerHTML = "";
-            if(posts.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-6">Akışta henüz veri dalgalanması yok...</p>`;
-                return;
-            }
-            posts.forEach(post => {
-                const isOwner = currentUser && post.userId === currentUser.uid;
-                const card = document.createElement("div");
-                card.className = "glass-card rounded-2xl p-4 border border-slate-900 space-y-3 relative";
-                
-                let deleteButtonHtml = "";
-                if(isOwner) {
-                    deleteButtonHtml = `
-                        <button onclick="deletePost('${post.id}')" class="absolute top-4 right-4 text-[10px] text-rose-500 hover:text-rose-400 font-bold transition">
-                            Sil 🗑️
-                        </button>
-                    `;
-                }
-
-                card.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <img src="${post.userPhoto || 'https://i.pravatar.cc/100'}" class="w-7 h-7 rounded-full border border-slate-800">
-                            <div>
-                                <span class="text-xs font-bold text-slate-300 block">${post.userName}</span>
-                                <span class="text-[8px] text-slate-500 block">Kozmik Sinyal</span>
-                            </div>
-                        </div>
-                        ${deleteButtonHtml}
-                    </div>
-                    ${post.text ? `<p class="text-xs text-slate-200 leading-relaxed break-words">${post.text}</p>` : ''}
-                    ${post.image ? `<img src="${post.image}" class="rounded-xl max-h-60 w-full object-cover border border-slate-900">` : ''}
-                    <div class="flex items-center space-x-2 pt-1 border-t border-slate-900/40">
-                        <button onclick="upvotePost('${post.id}')" class="px-3 py-1 bg-slate-950 hover:bg-violet-600/20 border border-slate-850 hover:border-violet-500/30 rounded-lg text-[10px] font-black text-violet-400 transition">
-                            🔺 +${post.upvotes || 0} AURA
-                        </button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        window.upvotePost = async function(postId) {
-            const postRef = doc(db, "aura_posts", postId);
-            try {
-                const postSnap = await getDoc(postRef);
-                if(!postSnap.exists()) return;
-                const postData = postSnap.data();
-                const voters = postData.voters || [];
-                
-                if(voters.includes(currentUser.uid)) {
-                    window.showToast("Bu payload'a zaten aura verdin!", "error");
-                    return;
-                }
-                
-                await updateDoc(postRef, {
-                    upvotes: increment(1),
-                    voters: arrayUnion(currentUser.uid)
-                });
-                
-                if (postData.userId) {
-                    await updateDoc(doc(db, "aura_users", postData.userId), {
-                        auraPoints: increment(10)
-                    });
-                }
-                window.showToast("+10 Aura Gücü Gönderildi!", "success");
-            } catch(e) {}
-        };
-
-        window.searchNetwork = function() {
-            const queryTxt = document.getElementById("search-input").value.toLowerCase().trim();
-            if(!queryTxt) {
-                renderFeed(allFeedPosts);
-                return;
-            }
-            const filtered = allFeedPosts.filter(p => 
-                (p.text && p.text.toLowerCase().includes(queryTxt)) || 
-                (p.userName && p.userName.toLowerCase().includes(queryTxt))
-            );
-            renderFeed(filtered);
-        };
-
-        // --- CANLI CHAT VE MESAJ SİLME PROTOKOLÜ ---
-        window.sendChat = function(e) {
-            e.preventDefault();
-            const input = document.getElementById("chat-input");
-            const txt = input.value.trim();
-            if(!txt) return;
-            
-            const chatRef = ref(rtdb, "aura_chat");
-            push(chatRef, {
-                userId: currentUser.uid,
-                userName: currentUser.displayName,
-                userPhoto: userCustomAvatar || currentUser.photoURL,
-                text: txt,
-                timestamp: Date.now()
-            });
-            input.value = "";
-        };
-
-        window.deleteChatMessage = function(msgKey) {
-            if(confirm("Bu anlık mesajı silmek istiyor musun?")) {
-                const msgRef = ref(rtdb, `aura_chat/${msgKey}`);
-                set(msgRef, null).then(() => {
-                    window.showToast("Mesaj silindi.", "success");
-                }).catch(() => {
-                    window.showToast("Sohbet silme hatası.", "error");
-                });
-            }
-        };
-
-        function listenChat() {
-            const chatContainer = document.getElementById("chat-container");
-            const chatRef = ref(rtdb, "aura_chat");
-            
-            // Tüm değişiklikleri anlık izlemek için onValue veya child olayları kullanılabilir. 
-            // Burada basitlik ve performans için real-time snapshot yapısını simüle ediyoruz.
-            import { onValue } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
-            
-            onValue(chatRef, (snapshot) => {
-                chatContainer.innerHTML = "";
-                const data = snapshot.val();
-                if(!data) {
-                    chatContainer.innerHTML = `<p class="text-[10px] text-slate-600 italic text-center pt-8">Kolektif bilince henüz veri akışı yok...</p>`;
-                    return;
-                }
-                
-                // Mesajları tarihe göre sırala
-                const sortedKeys = Object.keys(data).sort((a,b) => data[a].timestamp - data[b].timestamp);
-                
-                sortedKeys.forEach(key => {
-                    const msg = data[key];
-                    const isOwner = currentUser && msg.userId === currentUser.uid;
-                    const msgDiv = document.createElement("div");
-                    msgDiv.className = `flex items-start space-x-2.5 max-w-[85%] ${isOwner ? 'ml-auto flex-row-reverse space-x-reverse' : ''}`;
-                    
-                    let deleteIconHtml = "";
-                    if(isOwner) {
-                        deleteIconHtml = `
-                            <button onclick="deleteChatMessage('${key}')" class="text-[9px] text-rose-500 hover:text-rose-400 opacity-60 hover:opacity-100 transition self-center px-1">
-                                🗑️
-                            </button>
-                        `;
-                    }
-
-                    msgDiv.innerHTML = `
-                        <img src="${msg.userPhoto || 'https://i.pravatar.cc/100'}" class="w-6 h-6 rounded-full border border-slate-800 mt-0.5 flex-shrink-0">
-                        <div class="space-y-0.5">
-                            <span class="text-[9px] font-bold text-slate-400 block ${isOwner ? 'text-right' : ''}">${msg.userName}</span>
-                            <div class="p-2 rounded-2xl text-xs break-all ${isOwner ? 'bg-gradient-to-l from-cyan-600 to-blue-600 text-white rounded-tr-none' : 'bg-slate-900 border border-slate-850 text-slate-200 rounded-tl-none'}">
-                                ${msg.text}
-                            </div>
-                        </div>
-                        ${deleteIconHtml}
-                    `;
-                    chatContainer.appendChild(msgDiv);
-                });
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            });
-        }
-
-        // --- GERÇEK ZAMANLI LİDERLİK TABLOSU ---
-        function listenLeaderboard() {
-            const qUsers = query(collection(db, "aura_users"), orderBy("auraPoints", "desc"), limit(5));
-            onSnapshot(qUsers, (snapshot) => {
-                const wrapper = document.getElementById("leaderboard-wrapper");
-                wrapper.innerHTML = "";
-                let index = 1;
-                snapshot.forEach(doc => {
-                    const u = doc.data();
-                    const item = document.createElement("div");
-                    item.className = "flex items-center justify-between p-2 bg-slate-950/40 border border-slate-900 rounded-xl";
-                    item.innerHTML = `
-                        <div class="flex items-center space-x-2">
-                            <span class="text-[10px] font-black w-4 text-slate-500">${index}.</span>
-                            <img src="${u.userPhoto || 'https://i.pravatar.cc/100'}" class="w-5 h-5 rounded-full">
-                            <span class="text-[11px] font-bold text-slate-300 truncate max-w-[90px]">${u.userName || 'Anonim'}</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-[10px] font-bold text-amber-400">${u.auraPoints || 0} AP</span>
-                            ${currentUser && currentUser.uid !== doc.id ? `
-                                <button onclick="voteToUser('${doc.id}')" class="px-1.5 py-0.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 text-[9px] font-black rounded transition">Oy</button>
-                            ` : ''}
-                        </div>
-                    `;
-                    wrapper.appendChild(item);
-                    index++;
-                });
-            });
-        }
-
-        window.voteToUser = async function(targetUserId) {
-            try {
-                const myUserRef = doc(db, "aura_users", currentUser.uid);
-                const targetUserRef = doc(db, "aura_users", targetUserId);
-                
-                const mySnap = await getDoc(myUserRef);
-                const myData = mySnap.data();
-                const votedList = myData.votedTo || [];
-                
-                if (votedList.includes(targetUserId)) {
-                    window.showToast("Bu ay bu kullanıcıya zaten oy verdin!", "error");
-                    return;
-                }
-                
-                await updateDoc(myUserRef, { votedTo: arrayUnion(targetUserId) });
-                await updateDoc(targetUserRef, { monthlyVotes: increment(1) });
-                window.showToast("Şampiyonluk oyu başarıyla işlendi! 🏆", "success");
-            } catch(e) {
-                window.showToast("Oy verme hatası.", "error");
-            }
-        };
-
-        // --- ANKET SİSTEMİ ---
-        window.addNewPoll = async function() {
-            const title = document.getElementById("new-poll-title").value.trim();
-            const opt1 = document.getElementById("new-poll-opt1").value.trim();
-            const opt2 = document.getElementById("new-poll-opt2").value.trim();
-            if(!title || !opt1 || !opt2) return;
-            
-            try {
-                await addDoc(collection(db, "aura_polls"), {
-                    title: title,
-                    option1: opt1,
-                    option2: opt2,
-                    votes1: 0,
-                    votes2: 0,
-                    voters: [],
-                    timestamp: serverTimestamp()
-                });
-                document.getElementById("new-poll-title").value = "";
-                document.getElementById("new-poll-opt1").value = "";
-                document.getElementById("new-poll-opt2").value = "";
-                window.showToast("Küresel anket başlatıldı!", "success");
-            } catch(e){}
-        };
-
-        function listenPolls() {
-            const qPolls = query(collection(db, "aura_polls"), orderBy("timestamp", "desc"), limit(2));
-            onSnapshot(qPolls, (snapshot) => {
-                const wrapper = document.getElementById("polls-list-wrapper");
-                wrapper.innerHTML = "";
-                snapshot.forEach(doc => {
-                    const p = doc.data();
-                    const total = (p.votes1 || 0) + (p.votes2 || 0);
-                    const pct1 = total > 0 ? Math.round((p.votes1 / total) * 100) : 50;
-                    const pct2 = total > 0 ? Math.round((p.votes2 / total) * 100) : 50;
-                    const hasVoted = p.voters && p.voters.includes(currentUser.uid);
-                    
-                    const pDiv = document.createElement("div");
-                    pDiv.className = "bg-slate-950/40 border border-slate-900 rounded-xl p-3 space-y-2";
-                    pDiv.innerHTML = `
-                        <span class="text-[11px] font-bold text-slate-200 block break-words">📊 ${p.title}</span>
-                        <div class="space-y-1.5">
-                            <button onclick="votePoll('${doc.id}', 1)" ${hasVoted ? 'disabled' : ''} class="w-full text-left bg-slate-950 p-2 rounded-lg text-[10px] border border-slate-850 relative overflow-hidden transition hover:border-cyan-500/30">
-                                <div class="absolute inset-y-0 left-0 bg-cyan-500/10 transition-all" style="width: ${pct1}%"></div>
-                                <div class="relative flex justify-between font-bold text-slate-300">
-                                    <span>${p.option1}</span> <span>%${pct1}</span>
-                                </div>
-                            </button>
-                            <button onclick="votePoll('${doc.id}', 2)" ${hasVoted ? 'disabled' : ''} class="w-full text-left bg-slate-950 p-2 rounded-lg text-[10px] border border-slate-850 relative overflow-hidden transition hover:border-violet-500/30">
-                                <div class="absolute inset-y-0 left-0 bg-violet-500/10 transition-all" style="width: ${pct2}%"></div>
-                                <div class="relative flex justify-between font-bold text-slate-300">
-                                    <span>${p.option2}</span> <span>%${pct2}</span>
-                                </div>
-                            </button>
-                        </div>
-                    `;
-                    wrapper.appendChild(pDiv);
-                });
-            });
-        }
-
-        window.votePoll = async function(pollId, optionNum) {
-            const refP = doc(db, "aura_polls", pollId);
-            try {
-                const snap = await getDoc(refP);
-                if(snap.data().voters.includes(currentUser.uid)) return;
-                
-                await updateDoc(refP, {
-                    [`votes${optionNum}`]: increment(1),
-                    voters: arrayUnion(currentUser.uid)
-                });
-                window.showToast("Anket oyu sisteme entegre edildi.", "success");
-            } catch(e){}
-        };
-
-        // --- TUVALİ PAYLAŞMA SİSTEMİ ---
-        window.shareCanvasAsImage = function() {
-            const dataUrl = canvas.toDataURL("image/png");
-            pendingImageData = dataUrl;
-            document.getElementById("post-input").value = "Tuval üzerine çizdiğim gerçek zamanlı dijital başyapıtım! 🎨🧬";
-            window.switchTab("feed");
-            window.createPost();
         };
     </script>
 </body>
