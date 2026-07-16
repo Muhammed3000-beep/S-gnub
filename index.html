@@ -149,7 +149,7 @@
                                 <span class="text-[10px] font-bold">Fotoğraf Ekle</span>
                                 <input type="file" id="post-image-upload" accept="image/*" onchange="previewAndCompressImage(event)">
                             </label>
-                            <span id="upload-status" class="text-[9px] text-emerald-400 font-bold hidden">Görsel optimize edildi ✅</span>
+                            <span id="upload-status" class="text-[9px] text-emerald-400 font-bold hidden">Fotoğraf Eklendi ✅</span>
                             <button onclick="createPost()" class="px-5 py-2 bg-gradient-to-r from-violet-600 to-cyan-500 rounded-xl text-xs font-bold text-white shadow">Payload Gönder 🚀</button>
                         </div>
                     </div>
@@ -161,7 +161,7 @@
                         <span class="text-xs font-bold text-cyan-400">● GERÇEK ZAMANLI SOHBET</span>
                         <span class="text-[9px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded font-black animate-pulse">LIVE DB</span>
                     </div>
-                    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-950/20"></div>
+                    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-950/20 scroll-smooth"></div>
                     <form id="chat-form" class="p-3 border-t border-slate-800 bg-slate-950/60 flex space-x-2">
                         <input type="text" id="chat-input" placeholder="Anlık mesaj yazın..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none">
                         <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl text-xs font-bold text-white">Gönder</button>
@@ -236,8 +236,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        // EKSİK OLAN FONKSİYONLAR BURAYA EKLENDİ (query, orderBy vs.)
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query as fsQuery, orderBy as fsOrderBy, limit as fsLimit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        // updateDoc, increment ve deleteDoc EKLENDİ
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query as fsQuery, orderBy as fsOrderBy, limit as fsLimit, serverTimestamp, updateDoc, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getDatabase, ref, push, onChildAdded, query as rtdbQuery, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -332,7 +332,6 @@
             document.getElementById("side-user-name").textContent = user.displayName;
             document.getElementById("side-user-bio").textContent = userCustomBio;
             
-            // HER İKİ SİSTEM DE BURADA BAŞLATILIYOR
             listenChat(); 
             listenFeed(); 
         }
@@ -369,21 +368,55 @@
             }
         };
 
-        // --- YENİ EKLENEN KOZMİK AKIŞ (FEED) PROTOKOLÜ ---
+        // --- FOTOĞRAF YÜKLEME VE OPTİMİZASYON FONKSİYONU EKLENDİ ---
+        window.previewAndCompressImage = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Görseli Base64 olarak pendingImageData'ya aktar
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement("canvas");
+                    const MAX_WIDTH = 800; // Genişliği sınırla ki veritabanı şişmesin
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    pendingImageData = canvas.toDataURL("image/jpeg", 0.7); // Kalite %70
+                    document.getElementById("upload-status").classList.remove("hidden");
+                    window.showToast("Fotoğraf eklendi ve boyutu optimize edildi! 📸", "success");
+                }
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
         function listenFeed() {
             const postsRef = collection(db, "aura_posts");
-            // Gönderileri yeninden eskiye doğru sırala ve son 50 tanesini al
             const q = fsQuery(postsRef, fsOrderBy("createdAt", "desc"), fsLimit(50));
 
             onSnapshot(q, (snapshot) => {
                 const container = document.getElementById("feed-container");
-                container.innerHTML = ""; // Veri güncellendiğinde tekrarlanmayı önler
+                container.innerHTML = ""; 
 
                 snapshot.forEach((docSnap) => {
+                    const postId = docSnap.id; // Gönderi kimliği (Oy ve Silme için)
                     const post = docSnap.data();
                     const postEl = document.createElement("div");
                     
-                    // Tarih/Saat Ayarı
+                    // Gönderinin sahibi benim oturumum mu? (Silme butonu için)
+                    const isMyPost = currentUser && post.userId === currentUser.uid;
+
                     let timeString = "Az önce";
                     if(post.createdAt) {
                         const date = post.createdAt.toDate();
@@ -392,27 +425,62 @@
 
                     postEl.className = "glass-card rounded-2xl p-4 space-y-3 border border-slate-800/80 hover:border-cyan-500/30 transition duration-300";
                     postEl.innerHTML = `
-                        <div class="flex items-center space-x-3">
-                            <img src="${post.userPhoto || 'https://i.pravatar.cc/100'}" class="w-10 h-10 rounded-full border-2 border-cyan-500/50 object-cover">
-                            <div>
-                                <span class="text-[13px] font-black text-slate-100 block">${post.userName}</span>
-                                <span class="text-[9px] text-slate-500 block">${timeString}</span>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <img src="${post.userPhoto || 'https://i.pravatar.cc/100'}" class="w-10 h-10 rounded-full border-2 border-cyan-500/50 object-cover">
+                                <div>
+                                    <span class="text-[13px] font-black text-slate-100 block">${post.userName}</span>
+                                    <span class="text-[9px] text-slate-500 block">${timeString}</span>
+                                </div>
                             </div>
+                            ${isMyPost ? `<button onclick="deletePost('${postId}')" class="text-[10px] text-rose-500 hover:text-rose-400 font-bold bg-rose-950/30 px-2 py-1 rounded border border-rose-500/20 transition">Sil 🗑️</button>` : ''}
                         </div>
                         <div class="text-[13px] text-slate-300 break-words leading-relaxed pl-1">
                             ${post.text || ''}
                         </div>
                         ${post.image ? `<img src="${post.image}" class="w-full rounded-xl border border-slate-800 mt-3 object-cover shadow-lg">` : ''}
+                        
+                        <div class="pt-2 border-t border-slate-800/50 flex items-center">
+                            <button onclick="upvotePost('${postId}')" class="flex items-center space-x-1 text-cyan-400 hover:text-cyan-300 transition bg-cyan-950/30 px-3 py-1.5 rounded-lg border border-cyan-500/20">
+                                <span class="text-xs font-black">⬆️</span>
+                                <span class="text-xs font-bold">${post.votes || 0} Oy</span>
+                            </button>
+                        </div>
                     `;
                     container.appendChild(postEl);
                 });
             });
         }
 
-        // --- GÜNCELLENEN REALTIME SOHBET PROTOKOLÜ ---
+        // --- GÖNDERİYE OY VERME FONKSİYONU ---
+        window.upvotePost = async function(postId) {
+            if(!currentUser) { window.showToast("Oy vermek için giriş yapmalısın!", "error"); return; }
+            try {
+                const postRef = doc(db, "aura_posts", postId);
+                await updateDoc(postRef, {
+                    votes: increment(1)
+                });
+                window.showToast("Kozmik oy gönderildi! 🚀", "success");
+            } catch(e) {
+                console.error(e);
+                window.showToast("Oy verilemedi.", "error");
+            }
+        };
+
+        // --- GÖNDERİYİ SİLME FONKSİYONU ---
+        window.deletePost = async function(postId) {
+            if(!confirm("Bu gönderiyi kozmik boşluğa silmek istediğine emin misin?")) return;
+            try {
+                await deleteDoc(doc(db, "aura_posts", postId));
+                window.showToast("Gönderi başarıyla silindi.", "success");
+            } catch(e) {
+                console.error(e);
+                window.showToast("Silinemedi.", "error");
+            }
+        };
+
         function listenChat() {
             const chatRef = ref(rtdb, 'aura_chat');
-            // SADECE SON 50 MESAJI ÇEKİYORUZ - Veritabanı şişse bile anlık yüklenir.
             const q = rtdbQuery(chatRef, limitToLast(50)); 
             
             const container = document.getElementById("chat-container");
@@ -435,8 +503,10 @@
                     </div>
                 `;
                 container.appendChild(msgEl);
-                // Yeni mesaj geldiğinde otomatik aşağı kaydırır
-                container.scrollTop = container.scrollHeight; 
+                // Yeni mesaj geldiğinde ANINDA aşağı kaydırır
+                requestAnimationFrame(() => {
+                    container.scrollTop = container.scrollHeight;
+                });
             });
         }
 
@@ -446,6 +516,9 @@
             const txt = input.value.trim();
             if (!txt || !currentUser) return;
 
+            // ANINDA EKRANI TEMİZLE (Kullanıcıya bekleme hissi vermemek için)
+            input.value = "";
+
             const chatRef = ref(rtdb, 'aura_chat');
             push(chatRef, {
                 text: txt,
@@ -453,8 +526,6 @@
                 userName: currentUser.displayName,
                 userPhoto: userCustomAvatar,
                 timestamp: Date.now()
-            }).then(() => {
-                input.value = "";
             }).catch(() => {
                 window.showToast("Mesaj gönderilemedi.", "error");
             });
@@ -470,9 +541,11 @@
                     userId: currentUser.uid,
                     userName: currentUser.displayName,
                     userPhoto: userCustomAvatar,
+                    votes: 0, // Yeni gönderilere başlangıç oyu eklendi
                     createdAt: serverTimestamp()
                 });
                 document.getElementById("post-input").value = "";
+                document.getElementById("post-image-upload").value = ""; // Inputu sıfırla
                 pendingImageData = null;
                 document.getElementById("upload-status").classList.add("hidden");
                 window.showToast("Akış gönderisi evrene fırlatıldı! 🪐", "success");
