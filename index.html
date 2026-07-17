@@ -222,15 +222,6 @@
         </aside>
     </div>
 
-    <script>
-        document.addEventListener('contextmenu', event => event.preventDefault());
-        document.onkeydown = function(e) {
-            if(e.keyCode == 123) return false; 
-            if(e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) return false; 
-            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; 
-        }
-    </script>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -394,7 +385,7 @@
             reader.readAsDataURL(file);
         };
 
-        // --- 1) KOZMİK AKIŞ: SADECE SAYFA YENİLENİNCE / İLK AÇILINCA YÜKLENİR (STATİK) ---
+        // --- 1) KEŞFET AKIŞI: SADECE SAYFA YENİLENDİĞİNDE YÜKLENEN STATİK AKIŞ ---
         async function loadFeedStatic() {
             const postsRef = collection(db, "aura_posts");
             const q = fsQuery(postsRef, fsOrderBy("createdAt", "desc"), fsLimit(50));
@@ -475,7 +466,7 @@
             }
         }
 
-        // --- LİDERLİK TABLOSU: EN ÇOK OY ALAN İLK 3 KİŞİ ---
+        // --- LİDERLİK TABLOSU ---
         function renderLeaderboard(userVoteMap) {
             const leaderboardContainer = document.getElementById("leaderboard-wrapper");
             leaderboardContainer.innerHTML = "";
@@ -512,18 +503,15 @@
             });
         }
 
-        // --- GLOBAL KULLANICI BAZLI OY ENGELİ ---
         window.upvotePost = async function(postId, authorId) {
             if(!currentUser) { 
                 window.showToast("Oy vermek için giriş yapmalısın!", "error"); 
                 return; 
             }
-            
             if(currentUser.uid === authorId) {
                 window.showToast("Kendi gönderine oy veremezsin! 🚫", "error");
                 return;
             }
-
             if(localStorage.getItem(`user_voted_global`) === "true") {
                 window.showToast("Oy limitine ulaştın! Sistem genelinde sadece bir kez oy verebilirsin.", "error");
                 return;
@@ -537,9 +525,8 @@
                 
                 localStorage.setItem(`user_voted_global`, "true");
                 window.showToast("Oyunuz kaydedildi! Liderlik tablosunun güncellenmesi için akışı yenileyin. 🚀", "success");
-                loadFeedStatic(); // Yerel görünümü güncelle
+                loadFeedStatic(); 
             } catch(e) {
-                console.error(e);
                 window.showToast("Oy verme işlemi başarısız oldu.", "error");
             }
         };
@@ -551,22 +538,21 @@
                 window.showToast("Gönderi silindi.", "success");
                 loadFeedStatic();
             } catch(e) {
-                console.error(e);
                 window.showToast("Silinemedi.", "error");
             }
         };
 
-        // --- 2) CANLI SOHBET MOTORU: %100 ANLIK VE SÜREKLİ SAKRONİZE (FIRESTORE REALTIME STREAM) ---
+        // --- 2) CANLI SOHBET MOTORU VE ETKİLEŞİMLİ SİLME PROTOKOLÜ (DOKUNMA/SAĞ TIK) ---
         function listenChatAnlik() {
             const chatRef = collection(db, "aura_chat");
             const q = fsQuery(chatRef, fsOrderBy("timestamp", "asc"), fsLimit(100));
             
             const container = document.getElementById("chat-container");
 
-            // Firestore'un anlık dinleyicisi: Yeni mesaj girer girmez saniyesinde tüm kullanıcılarda tetiklenir
             onSnapshot(q, (snapshot) => {
                 container.innerHTML = ""; 
                 snapshot.forEach((docSnap) => {
+                    const msgId = docSnap.id;
                     const msg = docSnap.data();
                     const msgEl = document.createElement("div");
                     const isMe = currentUser && msg.userId === currentUser.uid;
@@ -576,15 +562,48 @@
                         <img src="${msg.userPhoto || 'https://i.pravatar.cc/100'}" class="w-7 h-7 rounded-full border border-slate-700 object-cover mt-0.5 shadow-sm">
                         <div class="max-w-[75%]">
                             <span class="text-[9px] text-slate-500 block mb-0.5 px-1 ${isMe ? 'text-right' : 'text-left'}">${msg.userName}</span>
-                            <div class="p-2.5 text-xs rounded-2xl shadow-sm ${isMe ? 'bg-gradient-to-br from-cyan-600 to-blue-600 text-white rounded-tr-none' : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'} break-words">
+                            <div id="msg-bubble-${msgId}" class="p-2.5 text-xs rounded-2xl shadow-sm ${isMe ? 'bg-gradient-to-br from-cyan-600 to-blue-600 text-white rounded-tr-none cursor-pointer' : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'} break-words">
                                 ${msg.text}
                             </div>
                         </div>
                     `;
                     container.appendChild(msgEl);
+
+                    // Sadece kendi mesajlarımız üzerinde silme tetikleyicilerini aktif edelim
+                    if(isMe) {
+                        const bubble = document.getElementById(`msg-bubble-${msgId}`);
+                        
+                        // Bilgisayar için: Sağ Tık (Context Menu)
+                        bubble.addEventListener('contextmenu', (e) => {
+                            e.preventDefault();
+                            confirmAndExecuteChatDelete(msgId);
+                        });
+
+                        // Mobil için: Üzerine basılı tutma / uzun dokunma (Long Press)
+                        let pressTimer;
+                        bubble.addEventListener('touchstart', () => {
+                            pressTimer = setTimeout(() => {
+                                confirmAndExecuteChatDelete(msgId);
+                            }, 700); // 700 milisaniye basılı tutulursa çalışır
+                        });
+                        bubble.addEventListener('touchend', () => clearTimeout(pressTimer));
+                        bubble.addEventListener('touchmove', () => clearTimeout(pressTimer));
+                    }
                 });
                 container.scrollTop = container.scrollHeight;
             });
+        }
+
+        // Mesaj silme onay penceresi ve yürütücü
+        async function confirmAndExecuteChatDelete(messageId) {
+            if(confirm("Bu mesajı canlı sohbetten kalıcı olarak silmek istiyor musun? 🗑️")) {
+                try {
+                    await deleteDoc(doc(db, "aura_chat", messageId));
+                    window.showToast("Mesaj başarıyla silindi.", "success");
+                } catch (err) {
+                    window.showToast("Mesaj silinemedi.", "error");
+                }
+            }
         }
 
         document.getElementById("chat-form").addEventListener("submit", async function(e) {
@@ -624,8 +643,8 @@
                 document.getElementById("post-image-upload").value = ""; 
                 pendingImageData = null;
                 document.getElementById("upload-status").classList.add("hidden");
-                window.showToast("Gönderi yayınlandı! Yenileyerek görebilirsiniz. 🪐", "success");
-                loadFeedStatic(); // Gönderen kişi için hemen yenile
+                window.showToast("Gönderi yayınlandı! Akışı yenileyerek görebilirsin. 🪐", "success");
+                loadFeedStatic(); // Gönderiyi paylaşan için akışı hemen tazele
             } catch(e) {
                 window.showToast("Gönderi paylaşılamadı.", "error");
             }
