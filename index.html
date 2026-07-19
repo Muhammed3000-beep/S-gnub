@@ -19,19 +19,13 @@
             border: 1px solid rgba(255, 255, 255, 0.04);
             backdrop-filter: blur(12px);
         }
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #03050a;
-        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #03050a; }
         ::-webkit-scrollbar-thumb {
             background: #1e293b;
             border-radius: 99px;
         }
-        input[type="file"] {
-            display: none;
-        }
+        input[type="file"] { display: none; }
     </style>
 </head>
 <body class="text-slate-100 min-h-screen flex flex-col selection:bg-fuchsia-500/30">
@@ -53,6 +47,21 @@
                     <textarea id="edit-bio" placeholder="Kendinden bahset..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 transition resize-none" rows="3"></textarea>
                 </div>
                 <button onclick="saveProfile()" class="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-violet-600 rounded-xl text-xs font-bold text-white shadow">Değişiklikleri Kilitle 🔐</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-action-modal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div class="glass-card max-w-xs w-full rounded-2xl p-5 border border-amber-500/30 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <h3 class="text-xs font-black text-amber-400 uppercase tracking-widest">🛡️ Admin Paneli</h3>
+                <button onclick="closeAdminModal()" class="text-slate-500 hover:text-slate-300 text-xs font-bold">✕</button>
+            </div>
+            <p id="admin-target-user" class="text-xs text-slate-300 font-bold text-center"></p>
+            <div class="space-y-2">
+                <button onclick="executeAdminAction('report')" class="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-[11px] font-bold text-orange-400 transition">⚠️ Şikayet Et (Merkeze İlet)</button>
+                <button onclick="executeAdminAction('kick')" class="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-[11px] font-bold text-rose-500 transition">🚪 Gruptan At</button>
+                <button onclick="executeAdminAction('block')" class="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-[11px] font-bold text-fuchsia-500 transition">🔇 Engelle (Sadece İzlesin)</button>
             </div>
         </div>
     </div>
@@ -97,17 +106,12 @@
             <div class="glass-card rounded-2xl p-4 space-y-3 border border-fuchsia-500/20">
                 <h3 class="text-[10px] font-black text-fuchsia-400 uppercase tracking-widest">🌌 GÜNÜN KOZMİK MODU</h3>
                 <div class="grid grid-cols-5 gap-1.5 pt-1">
-                    <button onclick="setCosmicMood('😎', 'Harika')" class="p-2 bg-slate-950 hover:bg-fuchsia-500/20 border border-slate-850 hover:border-fuchsia-500/30 rounded-xl text-lg transition duration-200" title="Harika">😎</button>
-                    <button onclick="setCosmicMood('😴', 'Uykulu')" class="p-2 bg-slate-950 hover:bg-fuchsia-500/20 border border-slate-850 hover:border-fuchsia-500/30 rounded-xl text-lg transition duration-200" title="Uykulu">😴</button>
-                    <button onclick="setCosmicMood('📚', 'Ders Çalışıyor')" class="p-2 bg-slate-950 hover:bg-fuchsia-500/20 border border-slate-850 hover:border-fuchsia-500/30 rounded-xl text-lg transition duration-200" title="Ders Çalışıyor">📚</button>
-                    <button onclick="setCosmicMood('🍕', 'Aç')" class="p-2 bg-slate-950 hover:bg-fuchsia-500/20 border border-slate-850 hover:border-fuchsia-500/30 rounded-xl text-lg transition duration-200" title="Aç">🍕</button>
-                    <button onclick="setCosmicMood('🤯', 'Sınav Haftası')" class="p-2 bg-slate-950 hover:bg-fuchsia-500/20 border border-slate-850 hover:border-fuchsia-500/30 rounded-xl text-lg transition duration-200" title="Sınav Haftası">🤯</button>
+                    <button onclick="window.showToast('Mod güncellendi: 😎', 'info')" class="p-2 bg-slate-950 hover:bg-fuchsia-500/20 border border-slate-850 hover:border-fuchsia-500/30 rounded-xl text-lg transition duration-200" title="Harika">😎</button>
+                    <button onclick="window.showToast('Mod güncellendi: 😴', 'info')" class="p-2 bg-slate-950 hover:bg-fuchsia-500/20 border border-slate-850 hover:border-fuchsia-500/30 rounded-xl text-lg transition duration-200" title="Uykulu">😴</button>
+                    <button onclick="window.showToast('Mod güncellendi: 📚', 'info')" class="p-2 bg-slate-950 hover:bg-fuchsia-500/20 border border-slate-850 hover:border-fuchsia-500/30 rounded-xl text-lg transition duration-200" title="Ders Çalışıyor">📚</button>
+                    <button onclick="window.showToast('Mod güncellendi: 🍕', 'info')" class="p-2 bg-slate-950 hover:bg-fuchsia-500/20 border border-slate-850 hover:border-fuchsia-500/30 rounded-xl text-lg transition duration-200" title="Aç">🍕</button>
+                    <button onclick="window.showToast('Mod güncellendi: 🤯', 'info')" class="p-2 bg-slate-950 hover:bg-fuchsia-500/20 border border-slate-850 hover:border-fuchsia-500/30 rounded-xl text-lg transition duration-200" title="Sınav Haftası">🤯</button>
                 </div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-4 space-y-3 border border-cyan-500/10">
-                <h3 class="text-[10px] font-black text-cyan-400 uppercase tracking-widest">🔍 İÇERİK FİLTRESİ</h3>
-                <input type="text" id="search-input" oninput="searchNetwork()" placeholder="Akışta kelime ara..." class="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none transition">
             </div>
 
             <div class="glass-card rounded-2xl p-4 space-y-2">
@@ -115,7 +119,7 @@
                     <span>🪐</span> <span>Kozmik Akış (Feed)</span>
                 </button>
                 <button onclick="switchTab('chat')" id="btn-tab-chat" class="w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition flex items-center space-x-3 text-slate-400 hover:bg-slate-900">
-                    <span>💬</span> <span>Canlı Kolektif Sohbet</span>
+                    <span>💬</span> <span>Özel Odalar</span>
                 </button>
                 <button onclick="switchTab('canvas')" id="btn-tab-canvas" class="w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition flex items-center space-x-3 text-slate-400 hover:bg-slate-900">
                     <span>🎨</span> <span>Gerçek Resim Tuvali</span>
@@ -154,16 +158,32 @@
                     <div id="feed-container" class="space-y-4"></div>
                 </div>
 
-                <div id="view-chat" style="display: none;" class="glass-card rounded-2xl flex flex-col h-[60vh] border border-slate-800/60 overflow-hidden">
-                    <div class="p-3 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
-                        <span class="text-xs font-bold text-cyan-400">● GERÇEK ZAMANLI SOHBET</span>
-                        <span class="text-[9px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded font-black animate-pulse">CANLI BAĞLANTI AKTİF</span>
+                <div id="view-chat" style="display: none;" class="glass-card rounded-2xl flex flex-col h-[65vh] border border-slate-800/60 overflow-hidden relative">
+                    
+                    <div id="room-list-screen" class="flex-1 flex flex-col h-full">
+                        <div class="p-3 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+                            <span class="text-xs font-bold text-cyan-400">● AKTİF ODALAR</span>
+                            <button onclick="showCreateRoomPrompt()" class="text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded font-black transition">ODA EKLE +</button>
+                        </div>
+                        <div id="rooms-container" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-950/20">
+                            <p class="text-xs text-slate-500 text-center py-4">Odalar yükleniyor...</p>
+                        </div>
                     </div>
-                    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-950/20 scroll-smooth"></div>
-                    <form id="chat-form" class="p-3 border-t border-slate-800 bg-slate-950/60 flex space-x-2">
-                        <input type="text" id="chat-input" placeholder="Anlık mesaj yazın..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none">
-                        <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl text-xs font-bold text-white">Gönder</button>
-                    </form>
+
+                    <div id="active-room-screen" class="hidden flex-1 flex flex-col h-full">
+                        <div class="p-3 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+                            <div class="flex items-center space-x-2">
+                                <span id="current-room-name" class="text-xs font-bold text-fuchsia-400 uppercase tracking-widest">Oda Adı</span>
+                                <span id="admin-badge" class="hidden text-[8px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-black border border-amber-500/30">ADMİN SENSİN</span>
+                            </div>
+                            <button onclick="leaveRoom()" class="text-[10px] bg-rose-950 text-rose-400 hover:text-white hover:bg-rose-600 border border-rose-900 px-3 py-1.5 rounded font-black transition">Gruptan Çık 🚪</button>
+                        </div>
+                        <div id="room-chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-950/20 scroll-smooth"></div>
+                        <form id="room-chat-form" class="p-3 border-t border-slate-800 bg-slate-950/60 flex space-x-2">
+                            <input type="text" id="room-chat-input" placeholder="Odaya mesaj yazın... (Admin isen gruptakilere tıklayarak menüyü aç)" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none">
+                            <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl text-xs font-bold text-white">Gönder</button>
+                        </form>
+                    </div>
                 </div>
 
                 <div id="view-canvas" style="display: none;" class="space-y-6">
@@ -172,7 +192,6 @@
                             <h2 class="text-sm font-extrabold text-cyan-400">🎨 Gerçek Zamanlı PNG Tuval</h2>
                             <button onclick="clearBoard()" class="text-[10px] bg-slate-900 border border-slate-800 px-2.5 py-1.5 rounded-lg text-slate-400">Temizle 🧹</button>
                         </div>
-                        
                         <div class="flex flex-wrap gap-2 justify-center py-2 bg-slate-950 p-2 rounded-xl">
                             <button onclick="setCurrentColor('#ef4444')" class="w-6 h-6 rounded bg-red-500 border border-white"></button>
                             <button onclick="setCurrentColor('#f97316')" class="w-6 h-6 rounded bg-orange-500"></button>
@@ -185,7 +204,6 @@
                         <div class="max-w-[320px] mx-auto bg-[#03050a] p-1 rounded-xl border border-slate-800">
                             <canvas id="real-canvas" width="256" height="256" class="w-full aspect-square cursor-crosshair rounded"></canvas>
                         </div>
-                        <button onclick="shareCanvasAsImage()" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-violet-600 text-xs font-bold rounded-xl text-white shadow hover:scale-[1.01] transition">Görsel (PNG) Olarak Akışta Paylaş! 🌍</button>
                     </div>
                 </div>
             </div>
@@ -196,27 +214,11 @@
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
                         <span class="text-base">👑</span>
-                        <h3 class="text-[10px] font-black text-amber-400 uppercase tracking-widest">AURA LİDERLERİ (İLK 3)</h3>
+                        <h3 class="text-[10px] font-black text-amber-400 uppercase tracking-widest">AURA LİDERLERİ</h3>
                     </div>
-                    <span class="text-[8px] bg-amber-500/20 text-amber-300 font-extrabold px-1.5 py-0.5 rounded uppercase">TOP 3</span>
                 </div>
                 <div id="leaderboard-wrapper" class="space-y-2 text-xs">
                     <p class="text-[10px] text-slate-500 italic">Kozmik sıralama hesaplanıyor...</p>
-                </div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-4 space-y-4 border border-cyan-500/10">
-                <h3 class="text-[10px] font-black text-cyan-400 uppercase tracking-widest">📊 KÜRESEL ANKETLER</h3>
-                <div class="space-y-4" id="polls-list-wrapper"></div>
-                
-                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-900 space-y-2">
-                    <span class="text-[10px] text-slate-400 font-bold block">Yeni Anket Oluştur:</span>
-                    <input type="text" id="new-poll-title" placeholder="Anket Sorusu?" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none border-slate-800">
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="new-poll-opt1" placeholder="Seçenek A" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none border-slate-800">
-                        <input type="text" id="new-poll-opt2" placeholder="Seçenek B" class="w-full bg-slate-900 border p-2 rounded text-[10px] text-slate-100 focus:outline-none border-slate-800">
-                    </div>
-                    <button onclick="addNewPoll()" class="w-full py-1.5 bg-cyan-600 rounded text-[9px] font-black text-white">ANKETİ BAŞLAT</button>
                 </div>
             </div>
         </aside>
@@ -225,7 +227,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, onSnapshot, query as fsQuery, orderBy as fsOrderBy, limit as fsLimit, serverTimestamp, updateDoc, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, onSnapshot, query as fsQuery, orderBy as fsOrderBy, limit as fsLimit, serverTimestamp, updateDoc, increment, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDXpYmC0IzpOpwGMkgswBDlo6h5aOlSUEU",
@@ -243,32 +245,13 @@
 
         let currentUser = null;
         let selectedColor = "#ef4444";
-        let userCustomAvatar = "";
-        let userCustomBio = "";
-        let pendingImageData = null; 
-
-        const canvas = document.getElementById("real-canvas");
-        const ctx = canvas.getContext("2d");
-        const pixelSize = 16; 
-
-        function initCanvas() {
-            ctx.fillStyle = "#03050a";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-        initCanvas();
-
-        canvas.addEventListener("click", (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const gridX = Math.floor(x / (rect.width / 16)) * pixelSize;
-            const gridY = Math.floor(y / (rect.height / 16)) * pixelSize;
-            ctx.fillStyle = selectedColor;
-            ctx.fillRect(gridX, gridY, pixelSize, pixelSize);
-        });
-
-        window.setCurrentColor = function(color) { selectedColor = color; };
-        window.clearBoard = function() { initCanvas(); };
+        
+        // Yeni Sistem Değişkenleri
+        let activeRoomId = null;
+        let activeRoomAdmin = null;
+        let currentUnsubscribe = null; // Aktif odanın dinleyicisini kapatmak için
+        let targetAdminUserId = null; 
+        let targetAdminUserName = "";
 
         window.showToast = function(message, type = "info") {
             const container = document.getElementById("toast-container");
@@ -284,9 +267,7 @@
 
         window.googleLogin = function() {
             signInWithPopup(auth, provider).then((result) => {
-                currentUser = result.user;
                 window.showToast("Başarıyla oturum açıldı!", "success");
-                updateUI(result.user);
             }).catch((error) => {
                 window.showToast("Giriş Başarısız: " + error.message, "error");
             });
@@ -294,51 +275,31 @@
 
         window.logout = function() {
             signOut(auth).then(() => {
-                currentUser = null;
                 document.getElementById("login-section").style.display = "block";
                 document.getElementById("app-section").style.display = "none";
                 document.getElementById("user-display").style.display = "none";
                 document.getElementById("side-profile-card").style.display = "none";
+                if(activeRoomId) window.leaveRoom();
             });
         };
-
-        async function updateUI(user) {
-            if (!user) return;
-            document.getElementById("login-section").style.display = "none";
-            document.getElementById("app-section").style.display = "block";
-            document.getElementById("user-display").style.display = "flex";
-            document.getElementById("side-profile-card").style.display = "block";
-            
-            userCustomAvatar = user.photoURL;
-            userCustomBio = "Henüz bir kozmik biyografi eklenmedi.";
-
-            document.getElementById("user-avatar").src = userCustomAvatar || "https://i.pravatar.cc/100";
-            document.getElementById("user-name-tag").textContent = user.displayName;
-            document.getElementById("side-user-avatar").src = userCustomAvatar || "https://i.pravatar.cc/100";
-            document.getElementById("side-user-name").textContent = user.displayName;
-            document.getElementById("side-user-bio").textContent = userCustomBio;
-            
-            listenChatAnlik(); 
-            loadFeedStatic(); 
-        }
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                updateUI(user);
+                document.getElementById("login-section").style.display = "none";
+                document.getElementById("app-section").style.display = "block";
+                document.getElementById("user-display").style.display = "flex";
+                document.getElementById("side-profile-card").style.display = "block";
+                document.getElementById("user-avatar").src = user.photoURL;
+                document.getElementById("user-name-tag").textContent = user.displayName;
+                document.getElementById("side-user-avatar").src = user.photoURL;
+                document.getElementById("side-user-name").textContent = user.displayName;
+                
+                loadRooms(); // Odaları Yükle
+            } else {
+                currentUser = null;
             }
         });
-
-        window.toggleProfileModal = function(show) {
-            const modal = document.getElementById("profile-modal");
-            if(show) {
-                document.getElementById("edit-avatar-url").value = userCustomAvatar;
-                document.getElementById("edit-bio").value = userCustomBio === "Henüz bir kozmik biyografi eklenmedi." ? "" : userCustomBio;
-                modal.style.display = "flex";
-            } else {
-                modal.style.display = "none";
-            }
-        };
 
         window.switchTab = function(tab) {
             ["feed", "chat", "canvas"].forEach(t => {
@@ -347,308 +308,235 @@
             });
             document.getElementById(`view-${tab}`).style.display = tab === 'chat' ? 'flex' : 'block';
             document.getElementById(`btn-tab-${tab}`).className = "w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 text-violet-400 border border-violet-500/20";
-            
-            if(tab === 'chat') {
-                const container = document.getElementById("chat-container");
-                container.scrollTop = container.scrollHeight;
-            }
         };
 
-        window.previewAndCompressImage = function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement("canvas");
-                    const MAX_WIDTH = 800;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext("2d");
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
-                    pendingImageData = canvas.toDataURL("image/jpeg", 0.7);
-                    document.getElementById("upload-status").classList.remove("hidden");
-                    window.showToast("Fotoğraf eklendi! 📸", "success");
+        // --- YENİ ODA SİSTEMİ ---
+        
+        // Odaları Listeleme
+        function loadRooms() {
+            const roomsRef = collection(db, "aura_rooms");
+            onSnapshot(fsQuery(roomsRef, fsOrderBy("createdAt", "desc")), (snapshot) => {
+                const container = document.getElementById("rooms-container");
+                container.innerHTML = "";
+                if (snapshot.empty) {
+                    container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">Henüz bir oda yok. İlk odayı sen ekle!</p>`;
+                    return;
                 }
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        };
-
-        // --- 1) KEŞFET AKIŞI: SADECE SAYFA YENİLENDİĞİNDE YÜKLENEN STATİK AKIŞ ---
-        async function loadFeedStatic() {
-            const postsRef = collection(db, "aura_posts");
-            const q = fsQuery(postsRef, fsOrderBy("createdAt", "desc"), fsLimit(50));
-
-            try {
-                const querySnapshot = await getDocs(q);
-                const container = document.getElementById("feed-container");
-                container.innerHTML = ""; 
-
-                const userVoteMap = {};
-
-                querySnapshot.forEach((docSnap) => {
-                    const postId = docSnap.id;
-                    const post = docSnap.data();
-                    const postEl = document.createElement("div");
-                    
-                    const votesCount = post.votes || 0;
-
-                    if (post.userName) {
-                        if (!userVoteMap[post.userName]) {
-                            userVoteMap[post.userName] = {
-                                photo: post.userPhoto || 'https://i.pravatar.cc/100',
-                                totalVotes: 0
-                            };
-                        }
-                        userVoteMap[post.userName].totalVotes += votesCount;
-                    }
-
-                    const isMyPost = currentUser && post.userId === currentUser.uid;
-                    const hasUserVoted = localStorage.getItem(`user_voted_global`) === "true";
-
-                    let timeString = "Az önce";
-                    if(post.createdAt) {
-                        const date = post.createdAt.toDate();
-                        timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' - ' + date.toLocaleDateString();
-                    }
-
-                    postEl.className = "glass-card rounded-2xl p-4 space-y-3 border border-slate-800/80 hover:border-cyan-500/30 transition duration-300";
-                    postEl.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                                <img src="${post.userPhoto || 'https://i.pravatar.cc/100'}" class="w-10 h-10 rounded-full border-2 border-cyan-500/50 object-cover">
-                                <div>
-                                    <span class="text-[13px] font-black text-slate-100 block">${post.userName}</span>
-                                    <span class="text-[9px] text-slate-500 block">${timeString}</span>
-                                </div>
-                            </div>
-                            ${isMyPost ? `<button onclick="deletePost('${postId}')" class="text-[10px] text-rose-500 hover:text-rose-400 font-bold bg-rose-950/30 px-2 py-1 rounded border border-rose-500/20 transition">Sil 🗑️</button>` : ''}
+                snapshot.forEach((docSnap) => {
+                    const room = docSnap.data();
+                    const el = document.createElement("div");
+                    el.className = "flex justify-between items-center p-3 bg-slate-900 border border-slate-800 rounded-xl hover:border-cyan-500/30 transition";
+                    el.innerHTML = `
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-200">${room.name}</h4>
+                            <p class="text-[9px] text-slate-500">Kurucu: ${room.adminName}</p>
                         </div>
-                        <div class="text-[13px] text-slate-300 break-words leading-relaxed pl-1">
-                            ${post.text || ''}
-                        </div>
-                        ${post.image ? `<img src="${post.image}" class="w-full rounded-xl border border-slate-800 mt-3 object-cover shadow-lg">` : ''}
-                        
-                        <div class="pt-2 border-t border-slate-800/50 flex items-center">
-                            <button 
-                                onclick="upvotePost('${postId}', '${post.userId}')" 
-                                class="flex items-center space-x-1 px-3 py-1.5 rounded-lg border transition ${
-                                    isMyPost 
-                                    ? 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed' 
-                                    : (hasUserVoted 
-                                        ? 'bg-emerald-950/10 border-emerald-500/10 text-emerald-500/60 cursor-not-allowed' 
-                                        : 'bg-cyan-950/30 border-cyan-500/20 text-cyan-400 hover:text-cyan-300')
-                                }"
-                                ${isMyPost || hasUserVoted ? 'disabled' : ''}
-                            >
-                                <span class="text-xs font-black">⬆️</span>
-                                <span class="text-xs font-bold">${votesCount} Oy</span>
-                            </button>
-                        </div>
+                        <button onclick="joinRoom('${docSnap.id}', '${room.name}', '${room.adminId}')" class="text-[10px] bg-cyan-950/50 text-cyan-400 border border-cyan-500/30 px-3 py-1.5 rounded-lg font-bold hover:bg-cyan-900 transition">Odaya Gir 🔑</button>
                     `;
-                    container.appendChild(postEl);
+                    container.appendChild(el);
                 });
-
-                renderLeaderboard(userVoteMap);
-            } catch (error) {
-                console.error("Akış yüklenemedi:", error);
-            }
-        }
-
-        // --- LİDERLİK TABLOSU ---
-        function renderLeaderboard(userVoteMap) {
-            const leaderboardContainer = document.getElementById("leaderboard-wrapper");
-            leaderboardContainer.innerHTML = "";
-
-            const sortedUsers = Object.keys(userVoteMap).map(name => {
-                return {
-                    name: name,
-                    photo: userVoteMap[name].photo,
-                    totalVotes: userVoteMap[name].totalVotes
-                };
-            }).sort((a, b) => b.totalVotes - a.totalVotes).slice(0, 3); 
-
-            if (sortedUsers.length === 0) {
-                leaderboardContainer.innerHTML = `<p class="text-[10px] text-slate-500 italic">Oylama verisi bekleniyor...</p>`;
-                return;
-            }
-
-            const medals = ["🥇", "🥈", "🥉"];
-
-            sortedUsers.forEach((usr, idx) => {
-                const row = document.createElement("div");
-                row.className = "flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-900";
-                row.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        <span class="text-sm font-black w-5">${medals[idx]}</span>
-                        <img src="${usr.photo}" class="w-7 h-7 rounded-full border border-slate-800 object-cover">
-                        <span class="font-bold text-slate-300 text-[11px] truncate max-w-[100px]">${usr.name}</span>
-                    </div>
-                    <span class="text-[10px] bg-amber-500/10 text-amber-400 font-extrabold px-2 py-0.5 rounded border border-amber-500/20">
-                        ${usr.totalVotes} Oy
-                    </span>
-                `;
-                leaderboardContainer.appendChild(row);
             });
         }
 
-        window.upvotePost = async function(postId, authorId) {
-            if(!currentUser) { 
-                window.showToast("Oy vermek için giriş yapmalısın!", "error"); 
-                return; 
-            }
-            if(currentUser.uid === authorId) {
-                window.showToast("Kendi gönderine oy veremezsin! 🚫", "error");
-                return;
-            }
-            if(localStorage.getItem(`user_voted_global`) === "true") {
-                window.showToast("Oy limitine ulaştın! Sistem genelinde sadece bir kez oy verebilirsin.", "error");
-                return;
-            }
-
-            try {
-                const postRef = doc(db, "aura_posts", postId);
-                await updateDoc(postRef, {
-                    votes: increment(1)
-                });
-                
-                localStorage.setItem(`user_voted_global`, "true");
-                window.showToast("Oyunuz kaydedildi! Liderlik tablosunun güncellenmesi için akışı yenileyin. 🚀", "success");
-                loadFeedStatic(); 
-            } catch(e) {
-                window.showToast("Oy verme işlemi başarısız oldu.", "error");
-            }
-        };
-
-        window.deletePost = async function(postId) {
-            if(!confirm("Bu gönderiyi silmek istediğine emin misin?")) return;
-            try {
-                await deleteDoc(doc(db, "aura_posts", postId));
-                window.showToast("Gönderi silindi.", "success");
-                loadFeedStatic();
-            } catch(e) {
-                window.showToast("Silinemedi.", "error");
-            }
-        };
-
-        // --- 2) CANLI SOHBET MOTORU VE ETKİLEŞİMLİ SİLME PROTOKOLÜ (DOKUNMA/SAĞ TIK) ---
-        function listenChatAnlik() {
-            const chatRef = collection(db, "aura_chat");
-            const q = fsQuery(chatRef, fsOrderBy("timestamp", "asc"), fsLimit(100));
+        window.showCreateRoomPrompt = async function() {
+            const roomName = prompt("Oluşturmak istediğiniz odanın adını girin:");
+            if (!roomName || roomName.trim() === "") return;
             
-            const container = document.getElementById("chat-container");
+            try {
+                await addDoc(collection(db, "aura_rooms"), {
+                    name: roomName.trim(),
+                    adminId: currentUser.uid,
+                    adminName: currentUser.displayName,
+                    blockedUsers: [],
+                    kickedUsers: [],
+                    createdAt: serverTimestamp()
+                });
+                window.showToast("Oda başarıyla oluşturuldu!", "success");
+            } catch (err) {
+                window.showToast("Oda oluşturulamadı.", "error");
+            }
+        };
 
-            onSnapshot(q, (snapshot) => {
-                container.innerHTML = ""; 
+        window.joinRoom = async function(roomId, roomName, adminId) {
+            // Önce atılmış mı (kicklenmiş mi) kontrol et
+            const roomDoc = await getDoc(doc(db, "aura_rooms", roomId));
+            const roomData = roomDoc.data();
+            if (roomData.kickedUsers && roomData.kickedUsers.includes(currentUser.uid)) {
+                window.showToast("Bu odadan atıldığınız için tekrar giremezsiniz!", "error");
+                return;
+            }
+
+            activeRoomId = roomId;
+            activeRoomAdmin = adminId;
+            
+            document.getElementById("room-list-screen").classList.add("hidden");
+            document.getElementById("active-room-screen").classList.remove("hidden");
+            document.getElementById("current-room-name").textContent = roomName;
+            
+            if (currentUser.uid === adminId) {
+                document.getElementById("admin-badge").classList.remove("hidden");
+            } else {
+                document.getElementById("admin-badge").classList.add("hidden");
+            }
+
+            listenRoomChat(roomId);
+        };
+
+        window.leaveRoom = function() {
+            activeRoomId = null;
+            activeRoomAdmin = null;
+            if (currentUnsubscribe) currentUnsubscribe();
+            
+            document.getElementById("active-room-screen").classList.add("hidden");
+            document.getElementById("room-list-screen").classList.remove("hidden");
+            document.getElementById("room-chat-container").innerHTML = "";
+        };
+
+        function listenRoomChat(roomId) {
+            if (currentUnsubscribe) currentUnsubscribe();
+            
+            const messagesRef = collection(db, "aura_rooms", roomId, "messages");
+            const q = fsQuery(messagesRef, fsOrderBy("timestamp", "asc"), fsLimit(100));
+
+            currentUnsubscribe = onSnapshot(q, async (snapshot) => {
+                const container = document.getElementById("room-chat-container");
+                container.innerHTML = "";
+                
+                // Odanın güncel block/kick durumunu çek
+                const roomDocSnap = await getDoc(doc(db, "aura_rooms", roomId));
+                const roomData = roomDocSnap.data();
+                const blockedList = roomData.blockedUsers || [];
+                const kickedList = roomData.kickedUsers || [];
+
+                // Eğer kullanıcı kicklenmişse, odadan anında at
+                if (kickedList.includes(currentUser.uid)) {
+                    window.showToast("Admin tarafından odadan atıldınız!", "error");
+                    window.leaveRoom();
+                    return;
+                }
+
                 snapshot.forEach((docSnap) => {
-                    const msgId = docSnap.id;
                     const msg = docSnap.data();
+                    const isMe = msg.userId === currentUser.uid;
+                    const isMsgUserBlocked = blockedList.includes(msg.userId);
                     const msgEl = document.createElement("div");
-                    const isMe = currentUser && msg.userId === currentUser.uid;
+                    
+                    // Admin ise, mesajların üstüne tıklayarak menüyü (veya unblock) açabilir.
+                    let clickAction = "";
+                    if (currentUser.uid === activeRoomAdmin && msg.userId !== currentUser.uid) {
+                        clickAction = `onclick="handleAdminClick('${msg.userId}', '${msg.userName}', ${isMsgUserBlocked})" class="cursor-pointer hover:opacity-80 transition"`;
+                    }
 
-                    msgEl.className = `flex items-start space-x-2.5 ${isMe ? 'flex-row-reverse space-x-reverse' : ''}`;
                     msgEl.innerHTML = `
-                        <img src="${msg.userPhoto || 'https://i.pravatar.cc/100'}" class="w-7 h-7 rounded-full border border-slate-700 object-cover mt-0.5 shadow-sm">
-                        <div class="max-w-[75%]">
-                            <span class="text-[9px] text-slate-500 block mb-0.5 px-1 ${isMe ? 'text-right' : 'text-left'}">${msg.userName}</span>
-                            <div id="msg-bubble-${msgId}" class="p-2.5 text-xs rounded-2xl shadow-sm ${isMe ? 'bg-gradient-to-br from-cyan-600 to-blue-600 text-white rounded-tr-none cursor-pointer' : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'} break-words">
-                                ${msg.text}
+                        <div ${clickAction} class="flex ${isMe ? "justify-end" : "justify-start"} mb-2">
+                            <div class="flex items-end space-x-2 max-w-[80%] ${isMe ? "flex-row-reverse space-x-reverse" : ""}">
+                                <img src="${msg.userPhoto}" class="w-6 h-6 rounded-full border border-slate-700">
+                                <div class="px-3 py-2 rounded-2xl ${
+                                    isMe 
+                                    ? "bg-cyan-600 text-white rounded-br-none" 
+                                    : (isMsgUserBlocked ? "bg-slate-900 border border-slate-800 text-slate-500 rounded-bl-none line-through" : "bg-slate-800 text-slate-200 rounded-bl-none")
+                                } text-[11px] shadow-sm">
+                                    ${!isMe ? `<span class="text-[9px] font-black text-cyan-300 block mb-0.5">${msg.userName}</span>` : ""}
+                                    <span>${msg.text}</span>
+                                </div>
                             </div>
                         </div>
                     `;
                     container.appendChild(msgEl);
-
-                    // Sadece kendi mesajlarımız üzerinde silme tetikleyicilerini aktif edelim
-                    if(isMe) {
-                        const bubble = document.getElementById(`msg-bubble-${msgId}`);
-                        
-                        // Bilgisayar için: Sağ Tık (Context Menu)
-                        bubble.addEventListener('contextmenu', (e) => {
-                            e.preventDefault();
-                            confirmAndExecuteChatDelete(msgId);
-                        });
-
-                        // Mobil için: Üzerine basılı tutma / uzun dokunma (Long Press)
-                        let pressTimer;
-                        bubble.addEventListener('touchstart', () => {
-                            pressTimer = setTimeout(() => {
-                                confirmAndExecuteChatDelete(msgId);
-                            }, 700); // 700 milisaniye basılı tutulursa çalışır
-                        });
-                        bubble.addEventListener('touchend', () => clearTimeout(pressTimer));
-                        bubble.addEventListener('touchmove', () => clearTimeout(pressTimer));
-                    }
                 });
                 container.scrollTop = container.scrollHeight;
             });
         }
 
-        // Mesaj silme onay penceresi ve yürütücü
-        async function confirmAndExecuteChatDelete(messageId) {
-            if(confirm("Bu mesajı canlı sohbetten kalıcı olarak silmek istiyor musun? 🗑️")) {
-                try {
-                    await deleteDoc(doc(db, "aura_chat", messageId));
-                    window.showToast("Mesaj başarıyla silindi.", "success");
-                } catch (err) {
-                    window.showToast("Mesaj silinemedi.", "error");
-                }
-            }
-        }
-
-        document.getElementById("chat-form").addEventListener("submit", async function(e) {
+        document.getElementById("room-chat-form").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const input = document.getElementById("chat-input");
-            const txt = input.value.trim();
-            if (!txt || !currentUser) return;
+            const input = document.getElementById("room-chat-input");
+            const text = input.value.trim();
+            if (!text || !activeRoomId) return;
+
+            // Önce block durumunu kontrol et
+            const roomDocSnap = await getDoc(doc(db, "aura_rooms", activeRoomId));
+            const roomData = roomDocSnap.data();
+            if (roomData.blockedUsers && roomData.blockedUsers.includes(currentUser.uid)) {
+                window.showToast("Bu odada engellendiniz. Sadece mesajları okuyabilirsiniz.", "error");
+                input.value = "";
+                return;
+            }
 
             try {
-                await addDoc(collection(db, "aura_chat"), {
-                    text: txt,
+                input.value = "";
+                await addDoc(collection(db, "aura_rooms", activeRoomId, "messages"), {
                     userId: currentUser.uid,
                     userName: currentUser.displayName,
-                    userPhoto: userCustomAvatar,
-                    timestamp: Date.now()
+                    userPhoto: currentUser.photoURL,
+                    text: text,
+                    timestamp: serverTimestamp()
                 });
-                input.value = ""; 
-            } catch (error) {
+            } catch (err) {
                 window.showToast("Mesaj gönderilemedi.", "error");
             }
         });
 
-        window.createPost = async function() {
-            const txt = document.getElementById("post-input").value.trim();
-            if (!txt && !pendingImageData) return;
-            try {
-                await addDoc(collection(db, "aura_posts"), {
-                    text: txt,
-                    image: pendingImageData,
-                    userId: currentUser.uid,
-                    userName: currentUser.displayName,
-                    userPhoto: userCustomAvatar,
-                    votes: 0,
-                    createdAt: serverTimestamp()
-                });
-                document.getElementById("post-input").value = "";
-                document.getElementById("post-image-upload").value = ""; 
-                pendingImageData = null;
-                document.getElementById("upload-status").classList.add("hidden");
-                window.showToast("Gönderi yayınlandı! Akışı yenileyerek görebilirsin. 🪐", "success");
-                loadFeedStatic(); // Gönderiyi paylaşan için akışı hemen tazele
-            } catch(e) {
-                window.showToast("Gönderi paylaşılamadı.", "error");
+        // --- ADMİN İŞLEMLERİ ---
+        window.handleAdminClick = async function(targetUserId, targetUserName, isBlocked) {
+            if (isBlocked) {
+                // Eğer engelliyse, son mesajına tıklandığında engeli kaldır
+                const confirmUnblock = confirm(`${targetUserName} adlı kullanıcının engeli kaldırılsın mı?`);
+                if (confirmUnblock) {
+                    await updateDoc(doc(db, "aura_rooms", activeRoomId), {
+                        blockedUsers: arrayRemove(targetUserId)
+                    });
+                    window.showToast("Engel kaldırıldı.", "success");
+                }
+            } else {
+                // Engelli değilse menüyü aç
+                targetAdminUserId = targetUserId;
+                targetAdminUserName = targetUserName;
+                document.getElementById("admin-target-user").textContent = `Hedef: ${targetUserName}`;
+                document.getElementById("admin-action-modal").style.display = "flex";
             }
         };
+
+        window.closeAdminModal = function() {
+            document.getElementById("admin-action-modal").style.display = "none";
+            targetAdminUserId = null;
+        };
+
+        window.executeAdminAction = async function(actionType) {
+            if (!targetAdminUserId || !activeRoomId) return;
+            const roomRef = doc(db, "aura_rooms", activeRoomId);
+
+            try {
+                if (actionType === 'report') {
+                    // Şikayetleri kendi sitendeki panele bağlayacağın koleksiyon: "aura_admin_reports"
+                    await addDoc(collection(db, "aura_admin_reports"), {
+                        reportedUserId: targetAdminUserId,
+                        reportedUserName: targetAdminUserName,
+                        reportedByAdmin: currentUser.uid,
+                        roomId: activeRoomId,
+                        timestamp: serverTimestamp()
+                    });
+                    window.showToast("Şikayet merkezi sisteme iletildi!", "success");
+                } 
+                else if (actionType === 'kick') {
+                    await updateDoc(roomRef, {
+                        kickedUsers: arrayUnion(targetAdminUserId)
+                    });
+                    window.showToast("Kullanıcı gruptan atıldı.", "success");
+                } 
+                else if (actionType === 'block') {
+                    await updateDoc(roomRef, {
+                        blockedUsers: arrayUnion(targetAdminUserId)
+                    });
+                    window.showToast("Kullanıcı engellendi, artık yazamayacak.", "success");
+                }
+            } catch (err) {
+                window.showToast("İşlem başarısız oldu.", "error");
+            }
+            
+            closeAdminModal();
+        };
+
     </script>
 </body>
 </html>
