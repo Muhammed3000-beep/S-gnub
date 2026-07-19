@@ -54,14 +54,14 @@
     <div id="admin-action-modal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
         <div class="glass-card max-w-xs w-full rounded-2xl p-5 border border-amber-500/30 space-y-4">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                <h3 class="text-xs font-black text-amber-400 uppercase tracking-widest">🛡️ Admin Paneli</h3>
+                <h3 class="text-xs font-black text-amber-400 uppercase tracking-widest">🛡️ Kullanıcı Kontrolü</h3>
                 <button onclick="closeAdminModal()" class="text-slate-500 hover:text-slate-300 text-xs font-bold">✕</button>
             </div>
             <p id="admin-target-user" class="text-xs text-slate-300 font-bold text-center"></p>
             <div class="space-y-2">
-                <button onclick="executeAdminAction('report')" class="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-[11px] font-bold text-orange-400 transition">⚠️ Şikayet Et (Merkeze İlet)</button>
-                <button onclick="executeAdminAction('kick')" class="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-[11px] font-bold text-rose-500 transition">🚪 Gruptan At</button>
-                <button onclick="executeAdminAction('block')" class="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-[11px] font-bold text-fuchsia-500 transition">🔇 Engelle (Sadece İzlesin)</button>
+                <button onclick="executeAdminAction('report')" class="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-[11px] font-bold text-orange-400 transition">⚠️ Şikayet Et</button>
+                <button onclick="executeAdminAction('kick')" id="admin-kick-btn" class="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-[11px] font-bold text-rose-500 transition">🚪 Gruptan Çıkar</button>
+                <button onclick="executeAdminAction('block')" id="admin-block-btn" class="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-[11px] font-bold text-fuchsia-500 transition">🔇 Engelle</button>
             </div>
         </div>
     </div>
@@ -143,7 +143,7 @@
             <div id="app-section" style="display: none;" class="space-y-6">
                 <div id="view-feed" class="space-y-6">
                     <div class="glass-card rounded-2xl p-4 space-y-3">
-                        <textarea id="post-input" placeholder="Tüm sisteme bir fısıltı gönder..." class="w-full bg-slate-950 border border-slate-850 rounded-xl p-3 text-xs text-slate-100 focus:outline-none resize-none" rows="3"></textarea>
+                        <textarea id="post-input" placeholder="Tüm sisteme bir fısıltı gönder... (Kendi iletine tıklayarak silebilirsin)" class="w-full bg-slate-950 border border-slate-850 rounded-xl p-3 text-xs text-slate-100 focus:outline-none resize-none" rows="3"></textarea>
                         
                         <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded-xl border border-slate-800">
                             <label class="cursor-pointer flex items-center space-x-2 text-cyan-400 hover:text-cyan-300 transition px-3 py-1.5 bg-cyan-950/40 rounded-lg border border-cyan-500/20">
@@ -180,7 +180,7 @@
                         </div>
                         <div id="room-chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-950/20 scroll-smooth"></div>
                         <form id="room-chat-form" class="p-3 border-t border-slate-800 bg-slate-950/60 flex space-x-2">
-                            <input type="text" id="room-chat-input" placeholder="Odaya mesaj yazın... (Admin isen gruptakilere tıklayarak menüyü aç)" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none">
+                            <input type="text" id="room-chat-input" placeholder="Odaya mesaj yazın... (Mesajlara tıklayarak menüyü açabilirsiniz)" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none">
                             <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl text-xs font-bold text-white">Gönder</button>
                         </form>
                     </div>
@@ -246,12 +246,13 @@
         let currentUser = null;
         let selectedColor = "#ef4444";
         
-        // Yeni Sistem Değişkenleri
         let activeRoomId = null;
         let activeRoomAdmin = null;
-        let currentUnsubscribe = null; // Aktif odanın dinleyicisini kapatmak için
+        let currentUnsubscribe = null; 
         let targetAdminUserId = null; 
         let targetAdminUserName = "";
+        let targetMessageId = null;
+        let targetMessageType = "chat"; // 'chat' veya 'feed'
 
         window.showToast = function(message, type = "info") {
             const container = document.getElementById("toast-container");
@@ -295,7 +296,8 @@
                 document.getElementById("side-user-avatar").src = user.photoURL;
                 document.getElementById("side-user-name").textContent = user.displayName;
                 
-                loadRooms(); // Odaları Yükle
+                loadRooms(); 
+                listenFeed();
             } else {
                 currentUser = null;
             }
@@ -310,9 +312,7 @@
             document.getElementById(`btn-tab-${tab}`).className = "w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 text-violet-400 border border-violet-500/20";
         };
 
-        // --- YENİ ODA SİSTEMİ ---
-        
-        // Odaları Listeleme
+        // --- GÜVENLİ ODA SİSTEMİ ---
         function loadRooms() {
             const roomsRef = collection(db, "aura_rooms");
             onSnapshot(fsQuery(roomsRef, fsOrderBy("createdAt", "desc")), (snapshot) => {
@@ -324,11 +324,12 @@
                 }
                 snapshot.forEach((docSnap) => {
                     const room = docSnap.data();
+                    const isPrivate = room.password && room.password.trim() !== "";
                     const el = document.createElement("div");
                     el.className = "flex justify-between items-center p-3 bg-slate-900 border border-slate-800 rounded-xl hover:border-cyan-500/30 transition";
                     el.innerHTML = `
                         <div>
-                            <h4 class="text-xs font-bold text-slate-200">${room.name}</h4>
+                            <h4 class="text-xs font-bold text-slate-200">${room.name} ${isPrivate ? '🔒' : '🔓'}</h4>
                             <p class="text-[9px] text-slate-500">Kurucu: ${room.adminName}</p>
                         </div>
                         <button onclick="joinRoom('${docSnap.id}', '${room.name}', '${room.adminId}')" class="text-[10px] bg-cyan-950/50 text-cyan-400 border border-cyan-500/30 px-3 py-1.5 rounded-lg font-bold hover:bg-cyan-900 transition">Odaya Gir 🔑</button>
@@ -342,28 +343,40 @@
             const roomName = prompt("Oluşturmak istediğiniz odanın adını girin:");
             if (!roomName || roomName.trim() === "") return;
             
+            const roomPassword = prompt("Oda için giriş şifresi belirleyin (Herkesin girmesini istemiyorsanız kod yazın, herkese açık için boş bırakın):");
+            
             try {
                 await addDoc(collection(db, "aura_rooms"), {
                     name: roomName.trim(),
+                    password: roomPassword ? roomPassword.trim() : "",
                     adminId: currentUser.uid,
                     adminName: currentUser.displayName,
                     blockedUsers: [],
                     kickedUsers: [],
                     createdAt: serverTimestamp()
                 });
-                window.showToast("Oda başarıyla oluşturuldu!", "success");
+                window.showToast("Oda şifreli/güvenli olarak oluşturuldu!", "success");
             } catch (err) {
                 window.showToast("Oda oluşturulamadı.", "error");
             }
         };
 
         window.joinRoom = async function(roomId, roomName, adminId) {
-            // Önce atılmış mı (kicklenmiş mi) kontrol et
             const roomDoc = await getDoc(doc(db, "aura_rooms", roomId));
             const roomData = roomDoc.data();
+            
             if (roomData.kickedUsers && roomData.kickedUsers.includes(currentUser.uid)) {
                 window.showToast("Bu odadan atıldığınız için tekrar giremezsiniz!", "error");
                 return;
+            }
+
+            // Güvenlik Kodu Doğrulaması
+            if (roomData.password && roomData.password.trim() !== "" && adminId !== currentUser.uid) {
+                const userPassInput = prompt("Bu oda şifrelidir. Giriş kodunu yazın:");
+                if (userPassInput !== roomData.password) {
+                    window.showToast("Hatalı güvenlik kodu! Giriş engellendi.", "error");
+                    return;
+                }
             }
 
             activeRoomId = roomId;
@@ -402,13 +415,12 @@
                 const container = document.getElementById("room-chat-container");
                 container.innerHTML = "";
                 
-                // Odanın güncel block/kick durumunu çek
                 const roomDocSnap = await getDoc(doc(db, "aura_rooms", roomId));
+                if(!roomDocSnap.exists()) return;
                 const roomData = roomDocSnap.data();
                 const blockedList = roomData.blockedUsers || [];
                 const kickedList = roomData.kickedUsers || [];
 
-                // Eğer kullanıcı kicklenmişse, odadan anında at
                 if (kickedList.includes(currentUser.uid)) {
                     window.showToast("Admin tarafından odadan atıldınız!", "error");
                     window.leaveRoom();
@@ -421,15 +433,18 @@
                     const isMsgUserBlocked = blockedList.includes(msg.userId);
                     const msgEl = document.createElement("div");
                     
-                    // Admin ise, mesajların üstüne tıklayarak menüyü (veya unblock) açabilir.
                     let clickAction = "";
-                    if (currentUser.uid === activeRoomAdmin && msg.userId !== currentUser.uid) {
-                        clickAction = `onclick="handleAdminClick('${msg.userId}', '${msg.userName}', ${isMsgUserBlocked})" class="cursor-pointer hover:opacity-80 transition"`;
+                    if (isMe) {
+                        // Kendi mesajına tıklayınca silme penceresini tetikle
+                        clickAction = `onclick="handleSelfMessageClick('${docSnap.id}', 'chat')"`;
+                    } else {
+                        // Başkasının mesajına tıklayınca mini pencereyi (Engelle, Şikayet et vb.) tetikle
+                        clickAction = `onclick="handleUserClick('${msg.userId}', '${msg.userName}', '${docSnap.id}', 'chat')"`;
                     }
 
                     msgEl.innerHTML = `
-                        <div ${clickAction} class="flex ${isMe ? "justify-end" : "justify-start"} mb-2">
-                            <div class="flex items-end space-x-2 max-w-[80%] ${isMe ? "flex-row-reverse space-x-reverse" : ""}">
+                        <div class="flex ${isMe ? "justify-end" : "justify-start"} mb-2">
+                            <div ${clickAction} class="cursor-pointer hover:opacity-80 transition flex items-end space-x-2 max-w-[80%] ${isMe ? "flex-row-reverse space-x-reverse" : ""}">
                                 <img src="${msg.userPhoto}" class="w-6 h-6 rounded-full border border-slate-700">
                                 <div class="px-3 py-2 rounded-2xl ${
                                     isMe 
@@ -454,7 +469,6 @@
             const text = input.value.trim();
             if (!text || !activeRoomId) return;
 
-            // Önce block durumunu kontrol et
             const roomDocSnap = await getDoc(doc(db, "aura_rooms", activeRoomId));
             const roomData = roomDocSnap.data();
             if (roomData.blockedUsers && roomData.blockedUsers.includes(currentUser.uid)) {
@@ -477,66 +491,184 @@
             }
         });
 
-        // --- ADMİN İŞLEMLERİ ---
-        window.handleAdminClick = async function(targetUserId, targetUserName, isBlocked) {
-            if (isBlocked) {
-                // Eğer engelliyse, son mesajına tıklandığında engeli kaldır
-                const confirmUnblock = confirm(`${targetUserName} adlı kullanıcının engeli kaldırılsın mı?`);
-                if (confirmUnblock) {
-                    await updateDoc(doc(db, "aura_rooms", activeRoomId), {
-                        blockedUsers: arrayRemove(targetUserId)
-                    });
-                    window.showToast("Engel kaldırıldı.", "success");
-                }
-            } else {
-                // Engelli değilse menüyü aç
-                targetAdminUserId = targetUserId;
-                targetAdminUserName = targetUserName;
-                document.getElementById("admin-target-user").textContent = `Hedef: ${targetUserName}`;
-                document.getElementById("admin-action-modal").style.display = "flex";
+        // --- KOZMİK AKIŞ (FEED) SİSTEMİ ---
+        function listenFeed() {
+            const feedRef = collection(db, "aura_feed");
+            onSnapshot(fsQuery(feedRef, fsOrderBy("timestamp", "desc"), fsLimit(50)), (snapshot) => {
+                const container = document.getElementById("feed-container");
+                container.innerHTML = "";
+                snapshot.forEach((docSnap) => {
+                    const post = docSnap.data();
+                    const isMe = post.userId === currentUser.uid;
+                    const el = document.createElement("div");
+                    el.className = "glass-card rounded-2xl p-4 space-y-3 border border-slate-800 cursor-pointer hover:border-slate-700 transition";
+                    el.onclick = isMe ? () => handleSelfMessageClick(docSnap.id, 'feed') : () => handleUserClick(post.userId, post.userName, docSnap.id, 'feed');
+                    
+                    el.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <img src="${post.userPhoto}" class="w-8 h-8 rounded-full border border-slate-700">
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-200">${post.userName}</h4>
+                                <span class="text-[8px] text-slate-500">Global Fısıltı</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-300 whitespace-pre-wrap">${post.text}</p>
+                    `;
+                    container.appendChild(el);
+                });
+            });
+        }
+
+        window.createPost = async function() {
+            const input = document.getElementById("post-input");
+            const text = input.value.trim();
+            if(!text) return;
+            try {
+                input.value = "";
+                await addDoc(collection(db, "aura_feed"), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName,
+                    userPhoto: currentUser.photoURL,
+                    text: text,
+                    timestamp: serverTimestamp()
+                });
+                window.showToast("Fısıltı akışa bırakıldı!", "success");
+            } catch(e) {
+                window.showToast("Gönderilemedi.", "error");
             }
+        };
+
+        // --- YENİ EKLENEN PENCERE VE MODERASYON FONKSİYONLARI ---
+        
+        // Kendi mesajına tıklayınca çalışan silme mekanizması
+        window.handleSelfMessageClick = function(messageId, type) {
+            targetMessageId = messageId;
+            targetMessageType = type;
+            const confirmDelete = confirm("Kendi mesajını sistemden kalıcı olarak silmek istiyor musun?");
+            if (confirmDelete) {
+                executeDeleteAction();
+            }
+        };
+
+        async function executeDeleteAction() {
+            try {
+                if (targetMessageType === "chat" && activeRoomId) {
+                    await deleteDoc(doc(db, "aura_rooms", activeRoomId, "messages", targetMessageId));
+                } else if (targetMessageType === "feed") {
+                    await deleteDoc(doc(db, "aura_feed", targetMessageId));
+                }
+                window.showToast("Mesaj başarıyla silindi.", "success");
+            } catch (err) {
+                window.showToast("Mesaj silinemedi.", "error");
+            }
+        }
+
+        // Başkasının mesajına tıklayınca o meşhur minik kontrol penceresini açan mekanizma
+        window.handleUserClick = function(targetUserId, targetUserName, messageId, type) {
+            targetAdminUserId = targetUserId;
+            targetAdminUserName = targetUserName;
+            targetMessageId = messageId;
+            targetMessageType = type;
+
+            document.getElementById("admin-target-user").textContent = `Hedef: ${targetUserName}`;
+            
+            // Eğer odada işlem yapılıyorsa ve işlem yapan kişi admin değilse gruptan atma/engelleme tuşlarını gizle/göster yapabiliriz.
+            const kickBtn = document.getElementById("admin-kick-btn");
+            const blockBtn = document.getElementById("admin-block-btn");
+            
+            if(type === 'chat' && currentUser.uid !== activeRoomAdmin) {
+                kickBtn.style.display = "none";
+                blockBtn.style.display = "none";
+            } else {
+                kickBtn.style.display = "block";
+                blockBtn.style.display = "block";
+            }
+
+            document.getElementById("admin-action-modal").style.display = "flex";
         };
 
         window.closeAdminModal = function() {
             document.getElementById("admin-action-modal").style.display = "none";
-            targetAdminUserId = null;
         };
 
         window.executeAdminAction = async function(actionType) {
-            if (!targetAdminUserId || !activeRoomId) return;
-            const roomRef = doc(db, "aura_rooms", activeRoomId);
+            if (!targetAdminUserId) return;
 
             try {
                 if (actionType === 'report') {
-                    // Şikayetleri kendi sitendeki panele bağlayacağın koleksiyon: "aura_admin_reports"
-                    await addDoc(collection(db, "aura_admin_reports"), {
-                        reportedUserId: targetAdminUserId,
-                        reportedUserName: targetAdminUserName,
-                        reportedByAdmin: currentUser.uid,
-                        roomId: activeRoomId,
-                        timestamp: serverTimestamp()
-                    });
-                    window.showToast("Şikayet merkezi sisteme iletildi!", "success");
+                    window.showToast(`${targetAdminUserName} kullanıcısı şikayet edildi. Merkez inceliyor!`, "success");
                 } 
-                else if (actionType === 'kick') {
-                    await updateDoc(roomRef, {
+                else if (actionType === 'kick' && activeRoomId) {
+                    await updateDoc(doc(db, "aura_rooms", activeRoomId), {
                         kickedUsers: arrayUnion(targetAdminUserId)
                     });
-                    window.showToast("Kullanıcı gruptan atıldı.", "success");
+                    window.showToast(`${targetAdminUserName} odadan başarıyla uzaklaştırıldı.`, "success");
                 } 
-                else if (actionType === 'block') {
-                    await updateDoc(roomRef, {
+                else if (actionType === 'block' && activeRoomId) {
+                    await updateDoc(doc(db, "aura_rooms", activeRoomId), {
                         blockedUsers: arrayUnion(targetAdminUserId)
                     });
-                    window.showToast("Kullanıcı engellendi, artık yazamayacak.", "success");
+                    window.showToast(`${targetAdminUserName} başarıyla engellendi (Sadece okuyabilir).`, "success");
                 }
             } catch (err) {
-                window.showToast("İşlem başarısız oldu.", "error");
+                window.showToast("İşlem gerçekleştirilemedi.", "error");
             }
-            
-            closeAdminModal();
+            window.closeAdminModal();
         };
 
+        // Profil Kaydetme/Düzenleme
+        window.toggleProfileModal = function(show) {
+            document.getElementById("profile-modal").style.display = show ? "flex" : "none";
+        };
+
+        window.saveProfile = function() {
+            const avatarUrl = document.getElementById("edit-avatar-url").value.trim();
+            const bio = document.getElementById("edit-bio").value.trim();
+            
+            if(avatarUrl) {
+                document.getElementById("user-avatar").src = avatarUrl;
+                document.getElementById("side-user-avatar").src = avatarUrl;
+            }
+            if(bio) {
+                document.getElementById("side-user-bio").textContent = bio;
+            }
+            window.toggleProfileModal(false);
+            window.showToast("Profil protokolü güncellendi!", "success");
+        };
+
+        // Tuval (Canvas) Çizim Fonksiyonları
+        const canvas = document.getElementById("real-canvas");
+        const ctx = canvas.getContext("2d");
+        let painting = false;
+
+        function startPosition(e) { painting = true; draw(e); }
+        function finishedPosition() { painting = false; ctx.beginPath(); }
+        
+        function draw(e) {
+            if(!painting) return;
+            ctx.lineWidth = 4;
+            ctx.lineCap = "round";
+            ctx.strokeStyle = selectedColor;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        canvas.addEventListener("mousedown", startPosition);
+        canvas.addEventListener("mouseup", finishedPosition);
+        canvas.addEventListener("mousemove", draw);
+        canvas.addEventListener("touchstart", (e) => { e.preventDefault(); startPosition(e); });
+        canvas.addEventListener("touchend", finishedPosition);
+        canvas.addEventListener("touchmove", (e) => { e.preventDefault(); draw(e); });
+
+        window.setCurrentColor = function(color) { selectedColor = color; };
+        window.clearBoard = function() { ctx.clearRect(0, 0, canvas.width, canvas.height); };
     </script>
 </body>
 </html>
